@@ -61,8 +61,7 @@
 # and uninstall.
 set -euo pipefail
 
-# TODO: update to the new domain once redeployed.
-DOMAIN="<your-domain>"
+DOMAIN="${1:-takoreview.amanogawa.dev}"
 SECRETS_ENV="/srv/app/secrets.env"
 PROM_DEFAULTS="/etc/default/prometheus"
 PROM_YML="/etc/prometheus/prometheus.yml"
