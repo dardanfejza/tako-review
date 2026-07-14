@@ -1,6 +1,6 @@
 # Architecture Index — TakoReview
 
-**Date:** 2026-06-08 · **Status:** **BUILT + DEPLOYED + LIVE** (2026-06-10) — `<your-domain>` (TODO: update to the new domain once redeployed). (The specs below are the as-designed contract; to operate the live host see [`../runbooks/operations.md`](../runbooks/operations.md).)
+**Date:** 2026-06-08 · **Status:** **BUILT + DEPLOYED + LIVE** (2026-06-10) — `takoreview.amanogawa.dev`. (The specs below are the as-designed contract; to operate the live host see [`../runbooks/operations.md`](../runbooks/operations.md).)
 
 This is the architecture index for **TakoReview**, a code-review web app that runs **Qwen2.5-Coder-1.5B in the browser** (WebLLM → WebGPU) backed by a thin FastAPI service for auth, history, and telemetry. It is the entry point to the two component designs and the locked spec.
 

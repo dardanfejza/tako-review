@@ -1,6 +1,6 @@
 # Project Overview: TakoReview
 
-**Status:** Live beta · `<your-domain>` (TODO: update to the new domain once redeployed)
+**Status:** Live beta · `takoreview.amanogawa.dev`
 
 **On scope and time.** I treated the production concerns most demo projects skip — scaling, monitoring,
 log/alert design, honest scoping of what's omitted — as real deliverables rather than things to hand-wave, so
@@ -104,7 +104,7 @@ Deliberate omissions for a demo, with the work each would require, ordered by pr
 
 ## 5. Live demo URL
 
-**`<your-domain>`** (TODO: update to the new domain once redeployed)
+**`takoreview.amanogawa.dev`**
 
 What "live" means for this app:
 
@@ -121,15 +121,15 @@ The host is DigitalOcean `sgp1` (Singapore), a single Droplet with the DB on a d
 Re-verify against a deployed instance:
 
 ```
-curl -sI https://<your-domain>/              # 200 (SPA)
-curl -s  https://<your-domain>/api/health    # {"status":"ok","db_ok":true,...}
+curl -sI https://takoreview.amanogawa.dev/              # 200 (SPA)
+curl -s  https://takoreview.amanogawa.dev/api/health    # {"status":"ok","db_ok":true,...}
 ```
 
 ---
 
 ## 6. Monitoring + log/alert design for production
 
-Production monitoring is usually where demo projects stay thin, so I made this section the most concrete one, and it is deployed and live. Prometheus (loopback, 15-day retention) and Grafana run on the droplet; the ops dashboard is publicly viewable, read-only, at **`<your-domain>/grafana/`** (TODO: update to the new domain once redeployed) (anonymous Viewer: the metrics are aggregates carrying no code or PII). Dashboards and alert rules are file-provisioned from `infra/monitoring/`; the full operator one-pager is `docs/architecture/monitoring.md` and the apply/operate runbook is RB-14. The structured logging, privacy-preserving error handlers, `GET /api/health` probe, and token-authed exporter at `GET /api/metrics` are built and shipped. One config-line remains for paging (see Alert delivery).
+Production monitoring is usually where demo projects stay thin, so I made this section the most concrete one, and it is deployed and live. Prometheus (loopback, 15-day retention) and Grafana run on the droplet; the ops dashboard is publicly viewable, read-only, at **`takoreview.amanogawa.dev/grafana/`** (anonymous Viewer: the metrics are aggregates carrying no code or PII). Dashboards and alert rules are file-provisioned from `infra/monitoring/`; the full operator one-pager is `docs/architecture/monitoring.md` and the apply/operate runbook is RB-14. The structured logging, privacy-preserving error handlers, `GET /api/health` probe, and token-authed exporter at `GET /api/metrics` are built and shipped. One config-line remains for paging (see Alert delivery).
 
 **What shapes every threshold (and makes this app's alerting unusual):** (1) inference is 100% client-side, so model-load time, decode speed, and WebGPU failures arrive as client telemetry beacons, not server latencies; a model-load spike is a *fleet device/network* problem, so those alerts are tickets, not pages. (2) the DB is single-writer SQLite with no horizontal knob, so the defining backend failure is `SQLITE_BUSY`/DB-unreachable, which is both a page and the Postgres-migration trigger. (3) the `sgp1`→Japan RTT is a fixed cost on the thin API only, so server SLOs are set against the API, not the user-perceived review.
 

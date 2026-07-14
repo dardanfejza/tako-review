@@ -5,7 +5,7 @@
 Code review powered by **Qwen2.5-Coder-1.5B**, running **entirely in your browser** (WebLLM → WebGPU) —
 backed by a thin **FastAPI** service that is deliberately **off the inference path**.
 
-**Demo (live):** **`<your-domain>`** <!-- TODO: update to the new domain once redeployed --> — the SPA and
+**Demo (live):** **`takoreview.amanogawa.dev`** — the SPA and
 `/api` are served from one origin over HTTPS; the site root returns `200` and `/api/health` returns
 `{"status":"ok","db_ok":true,...}`. **Guest mode works in-browser, so GitHub OAuth is optional.** Running an
 actual review needs a WebGPU-capable browser (desktop Chrome/Edge, or recent Safari) and a one-time ~1 GB model

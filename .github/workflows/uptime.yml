@@ -1,6 +1,6 @@
 # Off-box dead-man for the droplet-hosted monitoring stack.
 #
-# Everything else that watches <your-domain> runs ON the
+# Everything else that watches takoreview.amanogawa.dev runs ON the
 # droplet (Prometheus, Grafana, blackbox exporter) -- if the droplet, Caddy,
 # or TLS dies, the on-box monitor dies with it and the dashboard simply goes
 # unreachable. This workflow probes from GitHub's infrastructure instead, so
@@ -11,9 +11,6 @@
 # on the default branch); GitHub may also delay */30 schedules by a few
 # minutes under load, and auto-disables schedules after 60 days without
 # repo activity -- a manual workflow_dispatch run re-arms it.
-#
-# TODO: replace <your-domain> below with your deployed domain once redeployed
-# (this workflow will fail every run until you do).
 name: uptime
 
 on:
@@ -29,9 +26,9 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: SPA root responds
-        run: curl -fsS --max-time 30 https://<your-domain>/ >/dev/null
+        run: curl -fsS --max-time 30 https://takoreview.amanogawa.dev/ >/dev/null
 
       - name: API health reports ok + db_ok
         run: |
-          curl -fsS --max-time 30 https://<your-domain>/api/health \
+          curl -fsS --max-time 30 https://takoreview.amanogawa.dev/api/health \
             | python3 -c 'import json,sys;d=json.load(sys.stdin);assert d["status"]=="ok" and d["db_ok"]'

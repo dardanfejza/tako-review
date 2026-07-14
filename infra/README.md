@@ -41,7 +41,7 @@ required keys `DATABASE_URL` / `OAUTH_REDIRECT_URI` / `METRICS_TOKEN`), the two 
 callback registration, and starting `sakana-backend`. These need real credentials or artifacts that must not
 live in a committed script. Step-by-step: [`../docs/runbooks/operations.md`](../docs/runbooks/operations.md).
 
-> **The backend + frontend are BUILT and DEPLOYED + LIVE** as of 2026-06-10 (`https://<your-domain>` --
+> **The backend + frontend are BUILT and DEPLOYED + LIVE** as of 2026-06-10 (`https://takoreview.amanogawa.dev` --
 > TODO: update to the new domain once redeployed).
 > The "not yet built" framing above described the pre-deploy state.
 

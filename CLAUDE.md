@@ -9,7 +9,7 @@ backed by a **thin FastAPI service** for auth, history, feedback, and telemetry.
 *not* on the inference path — capacity scales with users' own hardware, so there is **zero server-side GPU /
 inference cost**.
 
-**Status:** BUILT, TESTED, and LIVE at `<your-domain>` <!-- TODO: update to the new domain once redeployed -->
+**Status:** BUILT, TESTED, and LIVE at `takoreview.amanogawa.dev`
 (first deploy 2026-06-10; full backend + frontend suites green). FastAPI backend + Vite/React SPA both ship from
 `init`; the DigitalOcean host serves the SPA and proxies `/api`. **To operate the live host, start at
 `docs/runbooks/operations.md`.** (Any doc still calling the backend "design-only / not built" is stale.)

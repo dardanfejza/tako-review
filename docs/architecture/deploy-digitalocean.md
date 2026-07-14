@@ -1,6 +1,6 @@
 # Deploying the backend on DigitalOcean
 
-**Date:** 2026-06-08 (deployed 2026-06-10) · **Status:** Operational guide — **DEPLOYED + LIVE** at `<your-domain>` (TODO: update to the new domain once redeployed)
+**Date:** 2026-06-08 (deployed 2026-06-10) · **Status:** Operational guide — **DEPLOYED + LIVE** at `takoreview.amanogawa.dev`
 **Source of truth:** [`backend.md`](./backend.md) §12 (Deploy), §7 (Persistence) · spec §9.
 **Automated path:** [`../../infra/`](../../infra/) (`provision-digitalocean.sh` + `cloud-init.yaml`).
 **Day-2 ops / redeploy / troubleshoot:** [`../runbooks/operations.md`](../runbooks/operations.md) — scenario runbooks distilled from the real deploy; they correct a few omissions in §7 below (flagged inline).

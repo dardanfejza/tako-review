@@ -440,7 +440,7 @@ groups:
         isPaused: false
 
       # Public-origin probe: blackbox exporter (module http_2xx) probing
-      # https://<your-domain>/ and /api/health from the host (TODO: update to
+      # https://takoreview.amanogawa.dev/ and /api/health from the host (TODO: update to
       # the new domain once redeployed). Severity
       # page. noDataState=Alerting: the absence of the probe series IS an incident
       # (blackbox exporter dead, scrape config gone, or Prometheus itself down).
@@ -495,7 +495,7 @@ groups:
           summary: Blackbox HTTP probe of the public origin is failing
           description: >-
             probe_success{job="blackbox-public"} == 0 for 2m -- the public
-            origin (https://<your-domain>/ or /api/health, see the
+            origin (https://takoreview.amanogawa.dev/ or /api/health, see the
             instance label) is not returning 2xx to the blackbox exporter.
             This is what a visitor experiences: Caddy down, TLS broken, DNS
             wrong, or the droplet gone. noDataState is Alerting because a

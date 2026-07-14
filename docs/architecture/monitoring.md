@@ -14,7 +14,7 @@
 > (prometheus-node-exporter, loopback :9100 — host memory/disk + the textfile collector),
 > and `blackbox-public` (blackbox exporter, loopback :9115, module `http_2xx`, probing the
 > public origin — see "Edge & host" below). Grafana serves the provisioned
-> "TakoReview - Ops" dashboard at `<your-domain>/grafana/` (TODO: update to the new domain once
+> "TakoReview - Ops" dashboard at `takoreview.amanogawa.dev/grafana/` (TODO: update to the new domain once
 > redeployed) (anonymous read-only) and carries the provisioned alert rules marked **provisioned** in
 > the table below — the absolute-threshold core plus the edge/host/dead-man set added
 > 2026-06-11. Notification delivery is **operator-activated**: the setup script renders a
@@ -174,7 +174,7 @@ Severities: **page** = wake someone (user-facing or data-integrity); **ticket** 
 | **DB unreachable** | `tako_db_ok` | **== 0 for 2 consecutive scrapes** | **page** | **provisioned** | Single-writer SQLite: `db_ok=0` (or a burst of 503 `db_error`) is the whole backend down *and* the documented Postgres-migration trigger. 2 scrapes debounces a one-off. Only reportable by a *live* process — process/host death is the target-down + blackbox rows' job. |
 | **`SQLITE_BUSY` / DB-failure surge** | `starlette_responses_total{status_code="503"}` on write routes (every DB failure maps to 503 in `errors.py`) | **any sustained occurrence (> 0 over 10m)** | **page** | **provisioned** (2026-06-11; needed zero new instrumentation) | A single writer means `SQLITE_BUSY` should be ~never. Recurrence = lock contention = the ceiling has been hit → migrate to Postgres (§3). |
 | **Target down** | Prometheus `up{job="sakana"}` | **== 0 for 2m** | **page** | **provisioned** | Scrape failing = process gone / host unreachable. Distinct from `tako_db_ok` (which needs a *live* process to report 0). |
-| **Public origin failing** | blackbox `probe_success{instance="<your-domain>/..."}` (TODO: update to the new domain once redeployed) for `/` and `/api/health` | **== 0 for 2m** (`noDataState: Alerting` — a vanished probe series is itself an incident) | **page** | **provisioned** (2026-06-11, via blackbox exporter) | End-to-end through public DNS, TLS, Caddy, and the proxy chain — failures loopback scraping can't see. Caveat: the prober runs *on the droplet*, so it shares fate with the host; **total-box death** is the off-box GitHub Actions probe's job (`.github/workflows/uptime.yml`). |
+| **Public origin failing** | blackbox `probe_success{instance="takoreview.amanogawa.dev/..."}` for `/` and `/api/health` | **== 0 for 2m** (`noDataState: Alerting` — a vanished probe series is itself an incident) | **page** | **provisioned** (2026-06-11, via blackbox exporter) | End-to-end through public DNS, TLS, Caddy, and the proxy chain — failures loopback scraping can't see. Caveat: the prober runs *on the droplet*, so it shares fate with the host; **total-box death** is the off-box GitHub Actions probe's job (`.github/workflows/uptime.yml`). |
 | **TLS cert expiring** | blackbox `probe_ssl_earliest_cert_expiry - time()` | **< 14 days remaining** | **ticket** | **provisioned** (2026-06-11) | Caddy auto-renews Let's Encrypt certs ~30 days out, so < 14 days remaining means renewal has been silently failing for weeks (e.g. an orange-clouded Cloudflare record blocking the ACME challenge — a documented gotcha for this host). |
 | **Host memory low** | node_exporter `node_memory_MemAvailable_bytes` | **< 200 MB for 10m** | **page** | **provisioned** (2026-06-11) | 2 GB host, **no swap** — the OOM killer is the failure mode if memory tightens. Prometheus+Grafana+backend+Caddy must coexist; this is the last warning before the kernel chooses a victim. |
 | **Disk filling (`/` and `/mnt/sakana_data`)** | node_exporter `node_filesystem_avail_bytes / node_filesystem_size_bytes` per mount | **< 15% available** (ticket) · **< 7% available** (page) | **ticket → page** | **provisioned** (2026-06-11, two-tier) | `/mnt/sakana_data` fill = SQLite corruption risk — the architecture's canonical killer. The root disk also carries the Prometheus TSDB. |
@@ -200,8 +200,8 @@ Two exporters close the "everything green while the box is dead" blind spot. Bot
 and are installed/configured by `infra/monitoring/setup-monitoring.sh`:
 
 - **Blackbox exporter** (`prometheus-blackbox-exporter`, `127.0.0.1:9115`, module `http_2xx`) — the
-  `blackbox-public` scrape job probes **`<your-domain>/`** and
-  **`<your-domain>/api/health`** (TODO: update to the new domain once redeployed) with `instance` = the target URL, yielding the
+  `blackbox-public` scrape job probes **`takoreview.amanogawa.dev/`** and
+  **`takoreview.amanogawa.dev/api/health`** with `instance` = the target URL, yielding the
   standard `probe_success`, `probe_duration_seconds`, and `probe_ssl_earliest_cert_expiry` series.
   Unlike the loopback `up{job="sakana"}` scrape, this exercises public DNS, the TLS handshake, Caddy,
   and the reverse-proxy chain — i.e. what a *visitor* hits — and gives the cert-expiry alarm for free.

@@ -1,6 +1,6 @@
 # Self-hosted monitoring: Prometheus + Grafana OSS on the droplet
 
-Single-host monitoring for the live app at `https://<your-domain>` (TODO:
+Single-host monitoring for the live app at `https://takoreview.amanogawa.dev` (TODO:
 update to the new domain once redeployed). All services run ON THE SAME
 DROPLET as the backend (1 vCPU / 2 GB RAM, no Docker), bind to loopback only,
 and are managed by systemd:
@@ -10,7 +10,7 @@ and are managed by systemd:
 | `prometheus` | Ubuntu 24.04 apt (`prometheus`) | `127.0.0.1:9090` | none (SSH tunnel only) |
 | `prometheus-node-exporter` | Ubuntu 24.04 apt | `127.0.0.1:9100` | none |
 | `prometheus-blackbox-exporter` | Ubuntu 24.04 apt | `127.0.0.1:9115` | none |
-| `grafana-server` | official apt repo (`apt.grafana.com`) | `127.0.0.1:3000` | `https://<your-domain>/grafana/` via Caddy |
+| `grafana-server` | official apt repo (`apt.grafana.com`) | `127.0.0.1:3000` | `https://takoreview.amanogawa.dev/grafana/` via Caddy |
 
 Prometheus scrapes four jobs every 30s, retention 15d:
 
@@ -28,7 +28,7 @@ Prometheus scrapes four jobs every 30s, retention 15d:
 - **`blackbox-public`** -> blackbox exporter on `127.0.0.1:9115` (module
   `http_2xx`, IPv4, follows redirects) probing the PUBLIC origin through the
   full visitor path (DNS -> Caddy -> TLS -> route):
-  `https://<your-domain>/` and `.../api/health`. Standard relabeling
+  `https://takoreview.amanogawa.dev/` and `.../api/health`. Standard relabeling
   (target -> `?target=` param -> `instance` label; `__address__` ->
   `127.0.0.1:9115`). Emits `probe_success`, `probe_duration_seconds`,
   `probe_ssl_earliest_cert_expiry`. Caveat: the prober still runs ON the
@@ -207,7 +207,7 @@ A CSP mismatch sets success=0 and logs the offending host via
 
 ## Off-box dead-man: GitHub Actions uptime workflow
 
-`.github/workflows/uptime.yml` probes `https://<your-domain>/` and
+`.github/workflows/uptime.yml` probes `https://takoreview.amanogawa.dev/` and
 `/api/health` (TODO: update to the new domain once redeployed; asserting
 `status=="ok" and db_ok`) every 30 minutes from
 GitHub's infrastructure -- the only watcher that survives total droplet
@@ -219,7 +219,7 @@ days of repo inactivity -- a manual `workflow_dispatch` run re-arms it).
 
 ## Access
 
-- **Grafana:** `https://<your-domain>/grafana/` -- **no login needed to
+- **Grafana:** `https://takoreview.amanogawa.dev/grafana/` -- **no login needed to
   view**: anonymous access is enabled READ-ONLY (org role Viewer; the ops
   dashboard is the home page). Rationale: the dashboard is a public demo
   surface and the metrics carry no code/PII (aggregates only). Note this also

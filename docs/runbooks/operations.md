@@ -16,7 +16,7 @@ invariants in [`../../CLAUDE.md`](../../CLAUDE.md).
 
 | Thing | Value |
 |---|---|
-| Domain | `https://<your-domain>` (TODO: update to the new domain once redeployed) — DNS on **Cloudflare**, grey-cloud A record (orange-cloud proxying breaks Caddy's Let's Encrypt) |
+| Domain | `https://takoreview.amanogawa.dev` — DNS on **Cloudflare**, grey-cloud A record (orange-cloud proxying breaks Caddy's Let's Encrypt) |
 | Region / droplet | `sgp1` (Singapore) · droplet `sakana-review`, id `<droplet-id>`, anchor IP `<droplet-ip>` |
 | Reserved IP | `<reserved-ip>` — stable public IP; the Cloudflare A record points here |
 | SSH | `ssh root@<droplet-ip>` (anchor, always works) · `root@<reserved-ip>` (reserved IP) |
@@ -40,7 +40,7 @@ invariants in [`../../CLAUDE.md`](../../CLAUDE.md).
 
 ```bash
 # Health (the canonical "is it up" check)
-curl -s https://<your-domain>/api/health      # {"status":"ok","db_ok":true,"version":"1.0.0"}
+curl -s https://takoreview.amanogawa.dev/api/health      # {"status":"ok","db_ok":true,"version":"1.0.0"}
 
 # Backend service
 systemctl status sakana-backend
@@ -170,7 +170,7 @@ so deploys take effect immediately.
 |---|---|---|
 | `SESSION_SIGNING_KEY` | **always** | random; provisioning generates it |
 | `DATABASE_URL` | **always** | `sqlite:////mnt/sakana_data/app.db` (4 slashes = absolute, on the volume) |
-| `OAUTH_REDIRECT_URI` | **always** | `https://<your-domain>/api/auth/github/callback` |
+| `OAUTH_REDIRECT_URI` | **always** | `https://takoreview.amanogawa.dev/api/auth/github/callback` |
 | `METRICS_TOKEN` | **when `ENV=prod`** | random (the `/api/metrics` endpoint is public-internet-reachable) |
 | `ENV` | defaults to `prod` | `prod` (gates `Secure` cookies + the metrics-token boot check) |
 | `GITHUB_CLIENT_ID` / `_SECRET` | for login only | from the GitHub OAuth app ([RB-5](#rb-5--set-or-rotate-github-oauth-credentials)) — blank is OK to boot |
@@ -184,7 +184,7 @@ set -euo pipefail
 SE=/srv/app/secrets.env
 add(){ grep -q "^$1=" "$SE" && [ -n "$(grep "^$1=" "$SE"|cut -d= -f2-)" ] && echo "$1: kept" || { sed -i "/^$1=/d" "$SE"; printf '%s=%s\n' "$1" "$2" >>"$SE"; echo "$1: set"; }; }
 add DATABASE_URL       "sqlite:////mnt/sakana_data/app.db"
-add OAUTH_REDIRECT_URI "https://<your-domain>/api/auth/github/callback"
+add OAUTH_REDIRECT_URI "https://takoreview.amanogawa.dev/api/auth/github/callback"
 add ENV                "prod"
 grep -q '^METRICS_TOKEN=.\+' "$SE" || { sed -i '/^METRICS_TOKEN=/d' "$SE"; printf 'METRICS_TOKEN=%s\n' "$(openssl rand -hex 32)" >>"$SE"; echo "METRICS_TOKEN: generated"; }
 chown app:app "$SE"; chmod 600 "$SE"
@@ -213,8 +213,8 @@ ssh root@<droplet-ip> \
 endpoints (reviews, history, feedback) fail until set.
 
 1. **Register / edit the OAuth app** at <https://github.com/settings/developers> → New OAuth App:
-   - Homepage URL: `https://<your-domain>`
-   - **Authorization callback URL: `https://<your-domain>/api/auth/github/callback`** — must
+   - Homepage URL: `https://takoreview.amanogawa.dev`
+   - **Authorization callback URL: `https://takoreview.amanogawa.dev/api/auth/github/callback`** — must
      match `OAUTH_REDIRECT_URI` byte-for-byte or GitHub returns a `redirect_uri` error.
    - Copy the **Client ID**; **Generate a client secret** (shown once).
 2. **Set them on the host** (edit in place — keeps secrets out of shell history):
@@ -227,7 +227,7 @@ endpoints (reviews, history, feedback) fail until set.
    ```bash
    systemctl restart sakana-backend
    curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' \
-     https://<your-domain>/api/auth/github/login    # 302 https://github.com/login/oauth/authorize?...
+     https://takoreview.amanogawa.dev/api/auth/github/login    # 302 https://github.com/login/oauth/authorize?...
    ```
    A `302` to `github.com/login/oauth/authorize` means the OAuth wiring is live.
 
@@ -270,15 +270,15 @@ Run after any deploy. All from your workstation (real DNS + TLS + Caddy path):
 
 ```bash
 # Backend
-curl -s  https://<your-domain>/api/health                 # {"status":"ok","db_ok":true,...}
+curl -s  https://takoreview.amanogawa.dev/api/health                 # {"status":"ok","db_ok":true,...}
 
 # SPA shell + assets
-curl -sI https://<your-domain>/            | grep -i '^HTTP'   # 200 (not 403 → see RB-9)
-curl -sI https://<your-domain>/preflight   | grep -i '^HTTP'   # 200 (SPA fallback for client routes)
-curl -sI https://<your-domain>/assets/index-*.js | grep -iE '^(HTTP|cache-control)'  # 200 + immutable
+curl -sI https://takoreview.amanogawa.dev/            | grep -i '^HTTP'   # 200 (not 403 → see RB-9)
+curl -sI https://takoreview.amanogawa.dev/preflight   | grep -i '^HTTP'   # 200 (SPA fallback for client routes)
+curl -sI https://takoreview.amanogawa.dev/assets/index-*.js | grep -iE '^(HTTP|cache-control)'  # 200 + immutable
 
 # Security headers (expect CSP, HSTS, nosniff, Referrer-Policy)
-curl -sI https://<your-domain>/ | grep -iE 'content-security-policy|strict-transport|x-content-type|referrer-policy'
+curl -sI https://takoreview.amanogawa.dev/ | grep -iE 'content-security-policy|strict-transport|x-content-type|referrer-policy'
 ```
 
 On the host: `systemctl is-active sakana-backend caddy` → `active` / `active`; `ls -la /mnt/sakana_data/app.db`
@@ -320,7 +320,7 @@ If HF changes its CDN topology, add the new redirect host here (and in the other
 
 ## RB-9 — SPA returns 403
 
-**Symptom:** `https://<your-domain>/` (and every SPA path / asset) returns **403**, but
+**Symptom:** `https://takoreview.amanogawa.dev/` (and every SPA path / asset) returns **403**, but
 `/api/health` works. A 403 (not 404) with files present = Caddy can't **traverse** to `dist/`.
 
 **Diagnose** (pinpoints the exact broken link in the path):
@@ -440,9 +440,9 @@ the real disaster copy.
 | Component | Bind | What it provides |
 |---|---|---|
 | Prometheus | `127.0.0.1:9090` | 15d retention; 30s scrape of all jobs below |
-| Grafana | `127.0.0.1:3000` → **https://<your-domain>/grafana/** | ops dashboard + alert rules, file-provisioned from `infra/monitoring/grafana/` |
+| Grafana | `127.0.0.1:3000` → **https://takoreview.amanogawa.dev/grafana/** | ops dashboard + alert rules, file-provisioned from `infra/monitoring/grafana/` |
 | node_exporter (`prometheus-node-exporter`, apt) | `127.0.0.1:9100` | host memory/disk (no swap on this box; `/mnt/sakana_data` fill = SQLite corruption risk) + the **textfile collector** (`/var/lib/prometheus/node-exporter/*.prom`) the crons below write into |
-| blackbox exporter (`prometheus-blackbox-exporter`, apt) | `127.0.0.1:9115` | `blackbox-public` job probes **`https://<your-domain>/`** and **`/api/health`** (module `http_2xx`) → `probe_success`, `probe_duration_seconds`, `probe_ssl_earliest_cert_expiry` — public DNS/TLS/Caddy path the loopback scrape can't see |
+| blackbox exporter (`prometheus-blackbox-exporter`, apt) | `127.0.0.1:9115` | `blackbox-public` job probes **`https://takoreview.amanogawa.dev/`** and **`/api/health`** (module `http_2xx`) → `probe_success`, `probe_duration_seconds`, `probe_ssl_earliest_cert_expiry` — public DNS/TLS/Caddy path the loopback scrape can't see |
 
 Scrape jobs: `sakana` (`/api/metrics` + Bearer token), `prometheus`, `node`, `blackbox-public`.
 Full install/operate/uninstall doc: **`infra/monitoring/README.md`**; alert semantics:
@@ -515,7 +515,7 @@ Caddy marker block therefore returns **403 on `/grafana/api/v1/provisioning*`** 
 After any Caddyfile change, verify the guard:
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' https://<your-domain>/grafana/api/v1/provisioning/contact-points   # 403
+curl -s -o /dev/null -w '%{http_code}\n' https://takoreview.amanogawa.dev/grafana/api/v1/provisioning/contact-points   # 403
 ```
 
 Gotchas:
@@ -532,7 +532,7 @@ Gotchas:
 
 1. **RB-7 curls** — health, SPA shell, client-route fallback, hashed assets, security headers
    ([RB-7](#rb-7--verify-a-deployment)).
-2. **Open https://<your-domain>/grafana/** — the ops dashboard must render with data;
+2. **Open https://takoreview.amanogawa.dev/grafana/** — the ops dashboard must render with data;
    panels noting "no data yet" are fine, broken queries are not.
 3. **Run ONE real review in a WebGPU browser, end-to-end.** This does double duty: it is the **only
    true end-to-end model-load check** (CSP `connect-src`, wasm runtime, WebGPU init, beacon pipe —
