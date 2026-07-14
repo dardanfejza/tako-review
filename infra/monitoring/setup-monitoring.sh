@@ -274,7 +274,7 @@ global:
 
 scrape_configs:
   # The sakana backend's token-authed Prometheus exporter (FastAPI, loopback).
-  # Series: starlette_* HTTP metrics + sakana_* business/client-side gauges.
+  # Series: starlette_* HTTP metrics + tako_* business/client-side gauges.
   - job_name: sakana
     metrics_path: /api/metrics
     authorization:
