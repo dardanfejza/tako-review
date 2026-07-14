@@ -1,0 +1,178 @@
+.preflight {
+  max-width: 48rem;
+  margin: var(--space-8) auto;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  text-align: center;
+}
+
+/* ── Two-column grid ── */
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+}
+
+/* Collapse to a single column on small screens — the 1fr/1fr grid is unreadable on phones. */
+@media (max-width: 40rem) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* The summary column sits beside the capability cards (placeholder hook for column-specific
+   tweaks; previously referenced but undefined, which rendered a literal "undefined" class). */
+.summaryColumn {
+  justify-content: flex-start;
+}
+
+/* ── Card ── */
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ── Capability row ── */
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  text-align: left;
+}
+
+.icon {
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon.ok {
+  color: var(--success);
+}
+
+.icon.fail {
+  color: var(--danger);
+}
+
+.icon.warn {
+  color: var(--warning);
+}
+
+.icon.pending {
+  color: var(--text-subtle);
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+}
+
+.detail {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  display: block;
+  margin-top: 0.1rem;
+}
+
+/* ── Spinner ── */
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Summary column text ── */
+
+.okText {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--success);
+  margin: 0;
+}
+
+.failText {
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.muted {
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.goLink {
+  display: inline-block;
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+
+.goLink:hover {
+  background: var(--accent-hover);
+}
+
+/* ── Failure guidance (inline region) ── */
+
+.reason {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin: var(--space-2) 0 0;
+}
+
+.failActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.secondaryLink {
+  display: inline-block;
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+
+.secondaryLink:hover {
+  background: var(--panel-hover, var(--panel));
+}

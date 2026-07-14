@@ -1,0 +1,22 @@
+.tooltip-wrap {
+  display: inline-flex;
+  min-width: 0;
+}
+
+/* Fixed-position bubble anchored above the control's center */
+.tooltip-bubble {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  z-index: 60;
+  width: max-content;
+  max-width: 240px;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--panel-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}

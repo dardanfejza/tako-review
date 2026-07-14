@@ -1,0 +1,90 @@
+/* "Did you know?" — a quiet footnote area, not a boxed panel: no background or border,
+   muted text, ghost pager controls. It informs while the user waits; it must not compete
+   with the progress info above it. */
+.tips-carousel {
+  width: 100%;
+  padding-top: var(--space-2);
+}
+
+.tips-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tips-bulb {
+  display: inline-flex;
+  color: var(--text-subtle);
+}
+
+.tips-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.tips-pager {
+  margin-left: auto;
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+}
+
+.tips-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: var(--text-subtle);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.tips-arrow:hover {
+  color: var(--text);
+  background: var(--bg-subtle);
+}
+
+/* One grid cell shared by every tip: the stack measures the tallest tip, so the panel
+   height is constant no matter which tip is showing or how its text wraps */
+.tip-stack {
+  display: grid;
+  margin-top: var(--space-2);
+}
+.tip-stack > .tip-body {
+  grid-area: 1 / 1;
+}
+
+.tip-body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.tip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  margin-top: 1px;
+  color: var(--text-subtle);
+}
+
+.tip-text {
+  min-width: 0;
+}
+
+.tip-title {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.tip-desc {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm);
+  color: var(--text-subtle);
+}

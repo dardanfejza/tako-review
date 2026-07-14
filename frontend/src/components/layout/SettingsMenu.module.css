@@ -1,0 +1,23 @@
+.gear-button,
+.gear-button-rail {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: var(--space-2);
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.gear-button:hover,
+.gear-button-rail:hover {
+  color: var(--text);
+  background: var(--panel-raised);
+}
+.gear-button-rail {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}

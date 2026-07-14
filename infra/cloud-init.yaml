@@ -1,0 +1,195 @@
+#cloud-config
+# First-boot configuration for the code-review backend droplet.
+# Renders section 7 of docs/architecture/deploy-digitalocean.md.
+#
+# IMPORTANT: keep this file PURE ASCII. cloud-init rejects the ENTIRE user-data
+# (treats it as "empty cloud config") if a non-ASCII byte survives rendering, so
+# no section signs / em-dashes / arrows -- plain ASCII only.
+#
+# __DOMAIN__ is substituted with the real FQDN by provision-digitalocean.sh
+# before this file is passed as droplet user-data.
+#
+# What this DOES on first boot: installs packages, creates the `app` user and
+# directories, mounts the attached Block Storage volume, installs Caddy, writes
+# the systemd unit + Caddyfile, and lays down a secrets.env skeleton with an
+# auto-generated SESSION_SIGNING_KEY.
+#
+# What this does NOT do (needs human input / built code -- see NEXT_STEPS.md):
+# upload the backend + SPA build, install Python deps, fill GitHub OAuth creds,
+# start the backend service.
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - python3.12
+  - python3.12-venv
+  - python3-pip
+  - git
+  - sqlite3
+  - debian-keyring
+  - debian-archive-keyring
+  - apt-transport-https
+  - curl
+  - gnupg
+
+# Mount the attached DO Block Storage volume named "sakana-data" (must match the
+# VOLUME_NAME in provision-digitalocean.sh). nofail = never block boot if absent.
+mounts:
+  - [ "/dev/disk/by-id/scsi-0DO_Volume_sakana-data", "/mnt/sakana_data", "ext4", "defaults,nofail,discard", "0", "2" ]
+
+write_files:
+  - path: /etc/systemd/system/sakana-backend.service
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=code-review backend (FastAPI)
+      After=network.target
+      # The DB lives on the attached Block Storage volume (backend.md sec 2.1). If that
+      # volume is not mounted, SQLite would silently create app.db on the root disk -- a
+      # POSIX-lock + data-residency violation. RequiresMountsFor pulls in the mount unit
+      # and orders after it; ConditionPathIsMountPoint refuses to start if it is not a
+      # real mount (the unit goes inactive rather than corrupting state).
+      RequiresMountsFor=/mnt/sakana_data
+      ConditionPathIsMountPoint=/mnt/sakana_data
+
+      [Service]
+      Type=simple
+      User=app
+      WorkingDirectory=/srv/app/backend
+      EnvironmentFile=/srv/app/secrets.env
+      ExecStartPre=/srv/app/.venv/bin/alembic upgrade head
+      # --no-access-log: the GitHub OAuth callback GET carries the single-use auth code in
+      # its query string; uvicorn's default access log would persist it. structlog covers
+      # request logging (backend.md). Drop this flag only if you add a redacting log filter.
+      ExecStart=/srv/app/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log
+      # NO --workers: exactly ONE process owns the SQLite WAL file (backend.md sec 2.1, 7)
+      Restart=always
+      RestartSec=2
+
+      [Install]
+      WantedBy=multi-user.target
+
+  - path: /etc/caddy/Caddyfile
+    permissions: '0644'
+    content: |
+      __DOMAIN__ {
+          encode zstd gzip
+
+          # Security headers (frontend.md sec 11/16). Without these the SPA ships with NO CSP.
+          # CSP must allow 'wasm-unsafe-eval' (WebLLM's WASM runtime) and the HuggingFace weight
+          # hosts in connect-src, or the model weight fetch is silently blocked in prod.
+          #
+          # KEEP THE Content-Security-Policy STRING BYTE-IDENTICAL ACROSS ALL FOUR COPIES:
+          #   infra/cloud-init.yaml (this file) | infra/bootstrap-droplet.sh
+          #   frontend/deploy/Caddyfile.snippet (prod source of truth) | frontend/deploy/Caddyfile.docker
+          # Only the Docker copy is `caddy validate`d at build time; the two that ship to prod are not.
+          header {
+              Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' https://huggingface.co https://*.hf.co https://cas-bridge.xethub.hf.co https://cdn-lfs.huggingface.co https://raw.githubusercontent.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
+              # HSTS: harmless on the HSTS-preloaded .dev TLD, load-bearing on any other domain.
+              Strict-Transport-Security "max-age=31536000"
+              X-Content-Type-Options "nosniff"
+              Referrer-Policy "strict-origin-when-cross-origin"
+          }
+
+          handle /api/* {
+              reverse_proxy 127.0.0.1:8000
+          }
+          handle {
+              root * /srv/app/frontend/dist
+
+              # MIME for the WebLLM wasm runtime + cache policy: immutable hashed assets,
+              # never cache index.html so deploys take effect immediately.
+              @wasm path *.wasm
+              header @wasm Content-Type "application/wasm"
+              @hashed path /assets/*
+              header @hashed Cache-Control "public, max-age=31536000, immutable"
+              @html path / /index.html
+              header @html Cache-Control "no-store"
+
+              try_files {path} /index.html
+              file_server
+          }
+          request_body {
+              max_size 1MB
+          }
+      }
+
+  - path: /srv/app/secrets.env.template
+    permissions: '0600'
+    content: |
+      # Filled into /srv/app/secrets.env on first boot. Add the two GitHub values,
+      # keep this file chmod 600 and owned by `app`. There is NO LLM key.
+      GITHUB_CLIENT_ID=
+      GITHUB_CLIENT_SECRET=
+      SESSION_SIGNING_KEY=
+      # METRICS_TOKEN is REQUIRED when ENV=prod (config.py refuses to start without it);
+      # it gates the /metrics scrape endpoint. Auto-generated below like SESSION_SIGNING_KEY.
+      METRICS_TOKEN=
+      DATABASE_URL=sqlite:////mnt/sakana_data/app.db
+      OAUTH_REDIRECT_URI=https://__DOMAIN__/api/auth/github/callback
+      RATE_LIMIT_ENABLED=false
+      ENV=prod
+      LOG_LEVEL=info
+
+  - path: /srv/app/NEXT_STEPS.md
+    permissions: '0644'
+    content: |
+      # Finish the deploy
+
+      Cloud-init has prepared the host. Remaining manual steps:
+
+      1. Upload the built backend and SPA:
+           rsync -a ./backend/      root@<this-host>:/srv/app/backend/
+           rsync -a ./frontend/dist/ root@<this-host>:/srv/app/frontend/dist/
+         then: chown -R app:app /srv/app/backend /srv/app/frontend
+
+      2. Install Python deps:
+           sudo -u app /srv/app/.venv/bin/pip install -r /srv/app/backend/requirements.txt
+
+      3. Add GitHub OAuth creds to /srv/app/secrets.env:
+           GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET
+         (SESSION_SIGNING_KEY and METRICS_TOKEN were auto-generated; DATABASE_URL + redirect
+          are set. METRICS_TOKEN is REQUIRED in prod -- the backend will not start without it.)
+
+      4. Register the GitHub OAuth app callback URL:
+           https://__DOMAIN__/api/auth/github/callback
+
+      5. Start the backend and reload Caddy:
+           systemctl enable --now sakana-backend
+           systemctl reload caddy
+
+      6. Verify:
+           curl https://__DOMAIN__/api/health   # {"status":"ok","db_ok":true,...}
+
+      7. Backups (docs/architecture/deploy-digitalocean.md section 9): install doctl
+         with a write-scoped token and cron the .backup + volume-snapshot script.
+         Note: DO Droplet Backups do NOT cover the attached volume - snapshot the volume.
+
+      The first HTTPS cert is issued automatically once DNS for __DOMAIN__ resolves
+      to this droplet; `systemctl reload caddy` forces a retry if needed.
+
+runcmd:
+  - adduser --system --group --home /srv/app app
+  - mkdir -p /srv/app/backend /srv/app/frontend/dist
+  # Create the venv as `app` BEFORE the chown so /srv/app/.venv is app-owned and the later
+  # `sudo -u app pip install` (NEXT_STEPS.md step 2) does not hit PermissionError. Mirrors
+  # bootstrap-droplet.sh, which already creates the venv via `sudo -u app`.
+  - chown -R app:app /srv/app /mnt/sakana_data
+  # Caddy runs as the unprivileged `caddy` user (NOT in group app). `adduser --system` creates
+  # /srv/app mode 750, so caddy cannot TRAVERSE it to serve the SPA at /srv/app/frontend/dist and
+  # every path then returns 403 (not 404). o+x grants traverse-only (not read/list); secrets.env
+  # stays mode 600. See docs/runbooks/operations.md RB-9.
+  - chmod o+x /srv/app
+  - sudo -u app python3.12 -m venv /srv/app/.venv
+  - sudo -u app /srv/app/.venv/bin/pip install --upgrade pip
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  - curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+  - apt-get update
+  - apt-get install -y caddy
+  - install -o app -g app -m 600 /srv/app/secrets.env.template /srv/app/secrets.env
+  - SK=$(python3 -c 'import secrets;print(secrets.token_urlsafe(48))'); sed -i "s|^SESSION_SIGNING_KEY=.*|SESSION_SIGNING_KEY=$SK|" /srv/app/secrets.env
+  - MT=$(python3 -c 'import secrets;print(secrets.token_urlsafe(48))'); sed -i "s|^METRICS_TOKEN=.*|METRICS_TOKEN=$MT|" /srv/app/secrets.env
+  - systemctl daemon-reload
+  - systemctl enable caddy
+  # sakana-backend is intentionally NOT started yet - it needs app code + GitHub creds (see NEXT_STEPS.md).

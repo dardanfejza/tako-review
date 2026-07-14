@@ -1,0 +1,8 @@
+.octopus {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 500ms ease;
+}
+.dimmed { opacity: 0.3; }

@@ -1,0 +1,166 @@
+/* Floating download card: critical progress info on top, education below (mock 2026-06-10) */
+.download-overlay {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 36rem;
+  margin: var(--space-8) auto;
+  padding: var(--space-6);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.download-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.download-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+}
+
+.download-header-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.download-title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+/* The focus trap parks programmatic focus here for screen readers; a visible ring on a
+   non-interactive heading reads as a glitch */
+.download-title:focus {
+  outline: none;
+}
+
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.progress-row > :first-child {
+  flex: 1;
+}
+
+.progress-pct {
+  flex: none;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.download-status {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  min-height: calc(1em * var(--leading)); /* reserve the line even before the first report */
+  overflow-wrap: anywhere; /* a long shard URL can't widen/reflow the card */
+}
+
+.download-timing {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.cache-hit {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--success);
+}
+
+.download-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.learn-more {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--accent);
+  text-decoration: none;
+}
+.learn-more:hover {
+  text-decoration: underline;
+}
+
+.download-btn {
+  background: var(--control);
+  color: var(--control-text);
+  border: 0;
+  border-radius: var(--radius);
+  height: 36px;
+  padding: 0 var(--space-4);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.download-btn:hover {
+  background: var(--control-hover);
+}
+
+.download-divider {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.ready-desc {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  line-height: var(--leading);
+  /* mirror the height of bar + status + timing so Load -> Downloading doesn't resize the card */
+  min-height: calc(3em * var(--leading));
+}
+
+.download-btn-primary {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: 0;
+  border-radius: var(--radius);
+  height: 36px;
+  padding: 0 var(--space-5);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.download-btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.download-error {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--danger);
+  background: var(--danger-subtle);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+}

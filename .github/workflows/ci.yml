@@ -1,0 +1,104 @@
+# CI — proves the 480+ green tests and the lint/type/format gates on every push and PR.
+#
+# Two independent jobs run in parallel (no shared state):
+#   * backend  — uv-managed FastAPI service (ruff lint + format check, pytest w/ coverage gate)
+#   * frontend — pnpm SPA (tsc typecheck, eslint, vitest w/ coverage gate)
+#
+# DELIBERATELY OUT OF SCOPE:
+#   * The WebGPU eval SPIKE (frontend/eval/spike.ts, `pnpm eval:spike`) is NOT run here. It boots a
+#     real browser + GPU to drive the on-device model and only works on hardware with WebGPU — CI
+#     runners have neither, so running it would always fail. It stays a manual, on-device check.
+#   * The eval SCORER unit tests (frontend/eval/scorers/*.test.ts, eval/report.test.ts,
+#     eval/cases/cases.test.ts) DO run — they are plain `*.test.ts` files picked up by vitest's
+#     default discovery (no GPU needed), so the `vitest run` step below already covers them.
+#
+# Action versions are pinned to major tags (@v4, @v6, etc.) per the repo's pinning policy.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# Cancel superseded runs on the same ref to save runner minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: backend (ruff + pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # setup-uv provides uv + manages its own cache keyed on uv.lock.
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      # --frozen: install exactly what uv.lock pins (incl. the dev group: ruff, pytest, pytest-cov).
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Ruff lint
+        run: uv run ruff check app tests
+
+      # Format gate: fails if any file drifts from `ruff format`. The tree is kept formatted
+      # (run `uv run ruff format app tests` before committing).
+      - name: Ruff format check
+        run: uv run ruff format --check app tests
+
+      # pytest addopts (pyproject [tool.pytest.ini_options]) already enforce --cov with
+      # fail_under=92, so a coverage regression fails this step.
+      - name: Pytest (with coverage gate)
+        run: uv run pytest
+
+  frontend:
+    name: frontend (tsc + eslint + vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # pnpm-lock.yaml is lockfileVersion 9.0 → pnpm 9.x.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit -p tsconfig.json
+
+      - name: ESLint
+        run: pnpm exec eslint src
+
+      # --coverage activates the vitest config thresholds (statements/lines 96), so the run
+      # fails on a coverage regression. This also exercises the eval scorer *.test.ts files.
+      - name: Vitest (with coverage gate)
+        run: pnpm exec vitest run --coverage

@@ -1,0 +1,63 @@
+/* Full-height right panel of the workspace split (the divider owns the separation) */
+.result-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+  min-height: 100%;
+}
+
+/* The review text takes the slack; feedback + timing pin to the bottom */
+.review-body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Visually hidden SR-only status line announcing review start / completion. */
+.sr-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.reviewing {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.stopped-badge {
+  align-self: flex-start;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--warning);
+  background: var(--warning-subtle);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-sm);
+}
+
+.result-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.copy-btn {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: var(--radius);
+  height: 30px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.copy-btn:hover {
+  background: var(--bg-subtle);
+}

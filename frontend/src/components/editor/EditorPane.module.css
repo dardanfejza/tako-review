@@ -1,0 +1,96 @@
+/* The outer wrapper: mode tabs sit above the card, not inside it */
+.editor-pane {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+/* Mode tabs row — above the card, no border/background */
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The elevated input-form card: code surface + toolbar */
+.editor-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/* Panel variant (workspace shell): full-height column, file tab above, no card chrome */
+.editor-panel {
+  height: 100%;
+}
+.editor-panel .editor-card {
+  flex: 1;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.editor-panel .editor-card > :first-child {
+  flex: 1;
+  min-height: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.editor-panel .editor-actions {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.filetab-row {
+  flex: none;
+  padding: var(--space-3) var(--space-4) 0;
+}
+.filetab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 7px 14px;
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.lang-chip {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Toolbar row inside the card: Sample left, spacer, Run right */
+.editor-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+}
+
+.spacer {
+  margin-left: auto;
+}
+
+.validation-error {
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--danger);
+  background: var(--danger-subtle);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+}

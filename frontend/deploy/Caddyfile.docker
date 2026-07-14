@@ -1,0 +1,42 @@
+# Local prod-parity Caddy config for the Docker `frontend-prod` service (docker spec §5.4).
+# Serves the built dist/ with the REAL prod CSP and reverse-proxies /api -> backend:8000,
+# presenting ONE origin so the SameSite=lax session cookie stays first-party.
+#
+# `handle` blocks (not `route`) make /api/* reverse-proxy BEFORE the SPA `try_files` fallback can
+# rewrite it (try_files runs in the rewrite phase and would otherwise turn /api/x into /index.html).
+# Named matchers are declared at site-block level — defining them inside `handle` is not reliable.
+#
+# CSP NOTE: the Content-Security-Policy below is DUPLICATED from frontend/deploy/Caddyfile.snippet
+# (the prod source of truth). Keep both in sync; the build runs `caddy validate` on this file.
+{
+    auto_https off
+}
+# Bind :8080 (unprivileged) so the container can run as the non-root `caddy` user without
+# CAP_NET_BIND_SERVICE. docker-compose maps host 8080 -> container 8080 (frontend-prod).
+:8080 {
+    @wasm   path *.wasm
+    @hashed path /assets/*
+    @html   path / /index.html
+
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+    handle {
+        root * /srv
+        header {
+            # KEEP THE Content-Security-Policy STRING BYTE-IDENTICAL ACROSS ALL FOUR COPIES:
+            #   frontend/deploy/Caddyfile.snippet (prod source of truth) | frontend/deploy/Caddyfile.docker (this file)
+            #   infra/cloud-init.yaml | infra/bootstrap-droplet.sh
+            # This is the only copy `caddy validate`d at build time. No HSTS here: the local Docker
+            # prod-parity harness serves plain HTTP on :80, where Strict-Transport-Security is inert.
+            Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' https://huggingface.co https://*.hf.co https://cas-bridge.xethub.hf.co https://cdn-lfs.huggingface.co https://raw.githubusercontent.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
+            X-Content-Type-Options "nosniff"
+            Referrer-Policy "strict-origin-when-cross-origin"
+        }
+        header @wasm   Content-Type "application/wasm"
+        header @hashed Cache-Control "public, max-age=31536000, immutable"
+        header @html   Cache-Control "no-store"
+        try_files {path} /index.html
+        file_server
+    }
+}

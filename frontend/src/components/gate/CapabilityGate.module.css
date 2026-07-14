@@ -1,0 +1,16 @@
+.gate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.acted-notice {
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+}

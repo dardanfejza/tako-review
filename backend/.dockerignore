@@ -1,0 +1,13 @@
+# Keep the build context small; never bake local state or secrets into the image.
+# (The Dockerfile copies only app/, migrations/, alembic.ini, requirements.txt — this also
+#  strips __pycache__ from those copied trees.)
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.db*
+.venv/
+.env
+tests/

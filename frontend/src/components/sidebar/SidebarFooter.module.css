@@ -1,0 +1,12 @@
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: auto;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+.collapsed {
+  flex-direction: column;
+  justify-content: center;
+}

@@ -1,0 +1,55 @@
+/* Chat-style circular action button (one slot, two states — see RunReviewButton.tsx).
+   `send` inverts with the theme via tokens: dark mode = light circle + dark arrow,
+   light mode = dark circle + light arrow. */
+.circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: opacity 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.send {
+  background: var(--text);
+  color: var(--panel);
+}
+.send:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.send:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.stop {
+  background: transparent;
+  border: 1.5px solid var(--border-strong);
+  color: var(--text);
+  animation: stop-pulse 1.6s ease-in-out infinite;
+}
+.stop:hover {
+  border-color: var(--text);
+}
+
+/* The loading feel: a soft breathing ring while the review streams. */
+@keyframes stop-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(128, 138, 157, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(128, 138, 157, 0.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stop {
+    animation: none;
+  }
+}

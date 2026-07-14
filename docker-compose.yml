@@ -1,0 +1,63 @@
+# Local Docker harness — see DOCKER.md and
+# docs/superpowers/specs/2026-06-09-docker-local-environment-design.md
+#
+# Three service DEFINITIONS; exactly TWO run at a time. `backend` has no profile so it always
+# comes up; the --profile flag picks the frontend (dev = HMR @5173, prod = built+CSP @8080).
+# Both frontends reverse-proxy /api -> backend:8000 so the browser sees ONE origin (the
+# SameSite=lax session cookie stays first-party — no CORS, no app-code changes).
+
+services:
+  backend:
+    # No `profiles:` -> always runs, shared by both frontends. Single process (no --workers):
+    # single-writer SQLite forbids a second writer (backend.md §2.1).
+    build:
+      context: ./backend
+    environment:
+      ENV: dev                                   # non-Secure cookie over HTTP; intended local mode (§3.2)
+      SESSION_SIGNING_KEY: dev-local-not-secret  # required (no default); dev-only placeholder, never a real key
+      DATABASE_URL: sqlite:////data/app.db       # four slashes = absolute path on the named volume (§7)
+      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI:-http://localhost:5173/api/auth/github/callback}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}    # blank -> guest mode works; fill via untracked .env for real OAuth
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      RATE_LIMIT_ENABLED: "false"
+      LOG_LEVEL: INFO
+    volumes:
+      - sakana_db:/data        # DB on a NAMED volume (Linux ext4) — macOS bind-mounts have flaky POSIX locks (§3.5)
+    ports:
+      # Loopback-only: direct /api/docs + /api/health for the developer on this machine, never
+      # the LAN. The browser reaches /api through the frontend proxy, not this published port.
+      - "127.0.0.1:8000:8000"  # direct /api/docs and /api/health (a different origin: no app cookie)
+
+  frontend-dev:
+    profiles: ["dev"]
+    build:
+      context: ./frontend
+      target: dev
+    environment:
+      VITE_PROXY_TARGET: http://backend:8000   # Vite dev-server proxy target (vite.config.ts §9)
+    volumes:
+      - ./frontend:/app                        # live source for HMR
+      - sakana_node_modules:/app/node_modules  # named vol so host node_modules can't shadow Linux-built deps (§5.3)
+    ports:
+      # Loopback-only: the Vite dev server binds 0.0.0.0 inside the container (--host, needed for
+      # Docker's bridge), but publishing to 127.0.0.1 keeps it off the LAN regardless of vite version.
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  frontend-prod:
+    profiles: ["prod"]
+    build:
+      context: ./frontend
+      target: prod                             # immutable artifact — no bind-mounts
+    ports:
+      # Container Caddy now binds :8080 (runs as non-root, no privileged port). Host 8080 -> 8080.
+      - "8080:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  sakana_db:               # DB persists across dev<->prod switches and `down`; cleared by `down -v`
+  sakana_node_modules:     # seeded once from the image; reset with `down -v` after a dep change (§11)

@@ -1,0 +1,46 @@
+# Caddy config snippet for the TakoReview SPA (frontend.md §11/§16).
+# Same-origin: Caddy serves the static dist/ AND reverse-proxies /api → uvicorn. One origin, no CORS.
+# Drop this into the site block for <your-domain> (see docs/architecture/deploy-digitalocean.md).
+# TODO: update to the new domain once redeployed.
+#
+# LOCAL PARITY: frontend/deploy/Caddyfile.docker copies the Content-Security-Policy below for the
+# Docker prod-parity harness (docker spec §5.4). This file stays the source of truth — keep both in sync.
+#
+# ⚠️ BEFORE SHIP — verify `connect-src` against the REAL network path (frontend.md §18.1 / build-plan §2.1):
+#    curl -sIL https://huggingface.co/mlc-ai/Qwen2.5-Coder-1.5B-Instruct-q4f32_1-MLC/resolve/main/<a-weight-shard>
+#    and inspect the `Location:` 302 hosts (HuggingFace redirects the ~1 GB shards to an LFS/CAS host —
+#    historically cdn-lfs.huggingface.co, currently Xet/CAS such as cas-bridge.xethub.hf.co / *.hf.co).
+#    Pin connect-src to the NARROWEST set that actually serves the bytes. A redirected host missing here is
+#    silently CSP-blocked (the resolve succeeds, the byte fetch is denied) — and dev usually has no CSP, so
+#    it passes there and fails only in prod.
+
+header {
+	# 'wasm-unsafe-eval' is MANDATORY: in Chromium WASM instantiation is governed by script-src; without it
+	# WebLLM's entire on-device runtime silently fails to start. It permits WASM without allowing JS eval.
+	#
+	# KEEP THE Content-Security-Policy STRING BYTE-IDENTICAL ACROSS ALL FOUR COPIES:
+	#   frontend/deploy/Caddyfile.snippet (this file, prod source of truth) | frontend/deploy/Caddyfile.docker
+	#   infra/cloud-init.yaml | infra/bootstrap-droplet.sh
+	# Only the Docker copy is `caddy validate`d at build time; the two that ship to prod are not.
+	Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' https://huggingface.co https://*.hf.co https://cas-bridge.xethub.hf.co https://cdn-lfs.huggingface.co https://raw.githubusercontent.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
+	# HSTS: harmless on the HSTS-preloaded .dev TLD, load-bearing on any other domain.
+	Strict-Transport-Security "max-age=31536000"
+	X-Content-Type-Options "nosniff"
+	Referrer-Policy "strict-origin-when-cross-origin"
+	# NOTE: COOP/COEP are intentionally OMITTED (frontend.md §18.3) — the WebGPU path needs no
+	# SharedArrayBuffer, and enabling cross-origin isolation can break unrelated resources. Add only if a
+	# future pinned worker requires SAB, after confirming the model/wasm assets carry the right CORP headers.
+}
+
+# Correct MIME for the WebLLM wasm runtime.
+@wasm path *.wasm
+header @wasm Content-Type "application/wasm"
+
+# Immutable, long-cache for hashed build assets; never cache index.html so deploys take effect.
+@hashed path /assets/*
+header @hashed Cache-Control "public, max-age=31536000, immutable"
+@html path / /index.html
+header @html Cache-Control "no-store"
+
+# SPA fallback for client-side routes (e.g. /preflight) — serve index.html when no file matches.
+try_files {path} /index.html

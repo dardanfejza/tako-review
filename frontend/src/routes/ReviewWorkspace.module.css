@@ -1,0 +1,78 @@
+.app-shell {
+  display: flex;
+  flex-direction: row;
+  /* Hard viewport cap (not min-height): the sidebar history and editor must scroll
+     internally — an unbounded shell lets a long history stretch the page and the
+     hero centers below the fold. dvh tracks mobile browser chrome. */
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.right-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.workspace-alert {
+  width: 100%;
+  font-size: var(--text-sm);
+  color: var(--danger);
+  background: var(--danger-subtle);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+}
+
+.device-lost {
+  max-width: 30rem;
+  margin: var(--space-8) auto;
+  padding: var(--space-6);
+  background: var(--warning-subtle);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  color: var(--text);
+}
+.device-lost p {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.drawer-toggle {
+  display: none;
+}
+@media (max-width: 900px) {
+  .drawer-toggle {
+    position: absolute;
+    top: var(--space-3);
+    left: var(--space-3);
+    z-index: 20;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+/* Expanded-before-running: centered muted hint in the otherwise-empty result column. */
+.empty-result-pane {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+  padding: var(--space-4);
+}

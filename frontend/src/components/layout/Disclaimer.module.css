@@ -1,0 +1,59 @@
+/* Compact fine-print card floating at the bottom-right of the viewport. */
+.disclaimer {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 30;
+  max-width: 23rem;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+/* Label column + text column: short bold leads make the three notices scannable
+   instead of three look-alike paragraphs. */
+.rows {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: var(--space-3);
+  row-gap: var(--space-2);
+}
+.rows dt {
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.rows dd {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  /* On phones, don't float over the editor — settle inline at the bottom, full width. */
+  .disclaimer {
+    position: static;
+    max-width: none;
+    border-radius: 0;
+    border: 0;
+    border-top: 1px solid var(--border);
+    box-shadow: none;
+  }
+}
+
+/* Exit animation after the first submit: slide down-right + fade (~400ms ease-in), then the
+   component unmounts (onTransitionEnd / timeout fallback). The transition lives on this class so
+   adding it starts the animation; prefers-reduced-motion users never get the class (the component
+   hides immediately instead). */
+.dismissed {
+  transform: translate(60%, 150%);
+  opacity: 0;
+  transition:
+    transform 400ms ease-in,
+    opacity 400ms ease-in;
+  pointer-events: none;
+}

@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node", "vite/client"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  },
+  "include": ["eval", "src/inference/reviewPipeline.ts", "src/inference/engineClient.ts", "src/lib/lineNumber.ts", "src/types/api.ts"]
+}

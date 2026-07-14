@@ -1,0 +1,17 @@
+# Grafana dashboard provider for the monitoring stack.
+# Copied by infra/monitoring/setup-monitoring.sh to /etc/grafana/provisioning/dashboards/.
+# The setup script copies infra/monitoring/grafana/dashboards/*.json to
+# /var/lib/grafana/dashboards/ on the droplet -- this provider watches that path.
+apiVersion: 1
+
+providers:
+  - name: tako
+    orgId: 1
+    folder: Tako
+    type: file
+    disableDeletion: false
+    allowUiUpdates: false
+    updateIntervalSeconds: 60
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

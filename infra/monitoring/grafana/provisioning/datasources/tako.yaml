@@ -1,0 +1,18 @@
+# Grafana datasource provisioning for the monitoring stack.
+# Copied by infra/monitoring/setup-monitoring.sh to /etc/grafana/provisioning/datasources/.
+# Prometheus is loopback-only on the droplet (127.0.0.1:9090); scrape_interval is 30s,
+# so timeInterval matches to keep rate()/range queries aligned with the real resolution.
+# The uid "prometheus" is FIXED: the tako-ops dashboard and the provisioned alert rules
+# reference it by uid. Do not change it without updating both.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    uid: prometheus
+    url: http://127.0.0.1:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: "30s"

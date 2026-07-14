@@ -1,0 +1,19 @@
+.code-input {
+  flex: 1;
+  width: 100%;
+  min-height: 16rem;
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading);
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  resize: vertical;
+}
+.code-input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}

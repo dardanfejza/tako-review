@@ -1,0 +1,184 @@
+{
+  "common": {
+    "appName": "TakoReview",
+    "loading": "Loading…",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "close": "Close"
+  },
+  "gate": {
+    "unsupportedTitle": "WebGPU is required",
+    "unsupportedBody": "This app runs the model on your device via WebGPU. Please use desktop Chrome, Edge, or a recent Safari.",
+    "reasonNeedsHttps": "A secure (HTTPS) connection is required.",
+    "reasonNoWebgpu": "Your browser does not support WebGPU.",
+    "reasonNoAdapter": "No compatible GPU adapter was found.",
+    "reasonDeviceInitFailed": "The GPU device could not be initialized.",
+    "reasonOom": "Your device ran out of memory initializing the GPU.",
+    "continueAsGuest": "Continue as guest",
+    "trySample": "Try sample code",
+    "seeDetailedCheck": "See detailed capability check",
+    "guestConfirmed": "You’re browsing as a guest. History and feedback still work without WebGPU.",
+    "sampleSeeded": "Sample code is ready in the editor."
+  },
+  "preflight": {
+    "ok": "All systems ready",
+    "fail": "Your browser ({{browser}}) does not support the required capabilities.",
+    "checking": "Checking…",
+    "available": "Available",
+    "notSupported": "Not supported",
+    "notSecure": "Not secure",
+    "secureDetail": "HTTPS / localhost",
+    "rowSecureContext": "Secure Context",
+    "rowWebgpu": "WebGPU",
+    "rowWorker": "Worker Threads",
+    "webgpuBlockedInsecure": "Blocked by insecure context",
+    "deviceFailed": "GPU available, device init failed"
+  },
+  "workspace": {
+    "resizePanels": "Resize panels",
+    "expand": "Expand workspace"
+  },
+  "download": {
+    "title": "Downloading Qwen2.5-Coder-1.5B (~1 GB, one time)",
+    "loadModel": "Load model",
+    "loadModelButton": "Load model (~1 GB, one time)",
+    "progress": "Downloading… {percent}%",
+    "loadedFromCache": "Loaded from cache",
+    "cdnError": "Couldn’t reach the model host. Check your connection and retry.",
+    "quotaError": "Not enough storage. Free up disk space or clear site data, then retry.",
+    "otherError": "The model couldn’t be loaded. Please retry.",
+    "resume": "Resume download",
+    "progressLabel": "Model download progress",
+    "elapsed": "{{time}} elapsed",
+    "remaining": "~{{time}} remaining",
+    "worksOffline": "After the one-time download, it works offline.",
+    "fasterReload": "Later refreshes will be faster.",
+    "didYouKnow": "Did you know?",
+    "tipPage": "{{current}} of {{total}}",
+    "prevTip": "Previous tip",
+    "nextTip": "Next tip",
+    "learnMore": "Learn more",
+    "readyTitle": "Download Qwen2.5-Coder-1.5B (~1 GB, one time)",
+    "loadingTitle": "Loading Qwen2.5-Coder-1.5B…",
+    "readyDesc": "Runs AI code review locally in your browser — nothing to install."
+  },
+  "review": {
+    "run": "Run Review",
+    "running": "Reviewing…",
+    "emptyPane": "Your review will appear here.",
+    "complete": "Review complete.",
+    "stoppedPartial": "Stopped — partial result.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "stop": "Stop",
+    "newReview": "New review",
+    "modeLegend": "Review mode",
+    "modeExplain": "Explain",
+    "modeBugs": "Find bugs",
+    "modeSecurity": "Security",
+    "modeStyle": "Style",
+    "placeholder": "Paste code to review…",
+    "sampleCode": "Sample code",
+    "timing": "reviewed in {{seconds}}s · {{tokensPerSec}} tok/s",
+    "chunkProgress": "Reviewing section {{index}} of {{total}}"
+  },
+  "history": {
+    "title": "History",
+    "empty": "No reviews yet. Run your first review to see it here.",
+    "saveFailed": "Couldn’t save this review.",
+    "loadFailed": "Couldn’t load history.",
+    "loadMore": "Load more",
+    "delete": "Delete",
+    "confirmDelete": "Confirm delete",
+    "itemMeta": "{{mode}} · {{when}} · {{lines}} lines · {{size}}"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "validation": "The input wasn’t accepted.",
+    "tooLarge": "That code is too large to review.",
+    "rateLimited": "Too many requests. Please wait a moment and retry.",
+    "saveFailed": "Couldn’t save — your review is still here. Retry?",
+    "generation": "The review couldn’t be generated.",
+    "deviceLost": "The GPU connection was lost. Reconnecting…",
+    "notFound": "That review is no longer available.",
+    "authStateMismatch": "Sign-in couldn’t be verified. Please try again.",
+    "authGithubError": "GitHub sign-in failed. Please try again.",
+    "authDbError": "We couldn’t complete sign-in. Please try again."
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "guestBadge": "Guest",
+    "signedInAs": "Signed in as {{name}}",
+    "modalTitle": "Sign in to TakoReview",
+    "continueWithGitHub": "Continue with GitHub",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithApple": "Continue with Apple",
+    "continueWithLine": "Continue with LINE",
+    "providerComingSoon": "Coming soon",
+    "signInTooltip": "Sign in to keep your reviews and resume them on any device."
+  },
+  "feedback": {
+    "prompt": "Was this review helpful?",
+    "up": "Helpful",
+    "down": "Not helpful",
+    "saveToEnable": "Save the review to leave feedback.",
+    "tagInaccurate": "Inaccurate",
+    "tagTooVague": "Too vague",
+    "tagWrongLanguage": "Wrong language",
+    "tagHallucinated": "Made things up"
+  },
+  "disclaimer": {
+    "aiGeneratedLabel": "AI-generated",
+    "aiGenerated": "Verify suggestions before relying on them.",
+    "onDeviceLabel": "On-device",
+    "onDevice": "Inference never leaves your machine. Review history and anonymous usage metrics are sent to our server.",
+    "licensesLabel": "Licenses",
+    "licenses": "Qwen2.5-Coder-1.5B-Instruct (Apache-2.0), packaged for in-browser inference by the MLC team."
+  },
+  "tips": {
+    "t1": {
+      "title": "Citations are clickable.",
+      "desc": "When the review cites line 5, click it — the editor jumps to and highlights that line."
+    },
+    "t2": {
+      "title": "Run from the keyboard.",
+      "desc": "Press ⌘+Enter (Ctrl+Enter on Windows) in the editor to start a review."
+    },
+    "t3": {
+      "title": "Bilingual reviews.",
+      "desc": "Switch the UI language and reviews follow — English or Japanese output, your choice."
+    },
+    "t4": {
+      "title": "Sample code is a deck.",
+      "desc": "Every click deals a different buggy snippet — 10 languages in the rotation."
+    },
+    "t5": {
+      "title": "Your reviews are saved.",
+      "desc": "Reopen past reviews from the sidebar; sign in with GitHub to sync across devices."
+    },
+    "t6": {
+      "title": "Big files? No problem.",
+      "desc": "Oversized code is split and reviewed section by section, automatically."
+    }
+  },
+  "language": {
+    "switchTo": "日本語",
+    "label": "Language",
+    "tooltip": "Reviews follow the UI language — English or Japanese."
+  },
+  "sidebar": {
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar",
+    "open": "Open sidebar",
+    "account": "Account"
+  },
+  "settings": {
+    "title": "Settings",
+    "telemetryOptOut": "Turn off usage metrics",
+    "languageLabel": "Language",
+    "languageHint": "Interface language. Reviews follow the model's language.",
+    "telemetryLabel": "Usage metrics",
+    "telemetryHint": "Send anonymous, code-free usage metrics to improve the demo."
+  }
+}

@@ -1,0 +1,9 @@
+# Host artifacts that must not enter the build context. node_modules is rebuilt in `deps`;
+# dist is produced by the `build` stage. The dev/build stages do `COPY . .` — keep it lean.
+node_modules
+dist
+coverage
+.env
+*.local
+tsconfig.tsbuildinfo
+.DS_Store

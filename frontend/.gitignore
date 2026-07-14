@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-ssr
+coverage
+*.local
+.DS_Store
+*.tsbuildinfo
+.vite/
+.eval-cache/
+# Generated eval reports — run.ts recreates reports/ on each `pnpm eval`; the committed
+# baseline carried placeholder provenance (libSha/hfRevision = "see appConfig"), so keep it local.
+eval/reports/

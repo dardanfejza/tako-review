@@ -1,0 +1,236 @@
+/* One persistent grid drives the whole transition: idle is [1fr 0px 0fr] (hero centered,
+   divider + result collapsed); split is [Nfr 1px (100-N)fr] set inline from the persisted
+   split percentage. Animating the track values makes the hero slide left and the result
+   panel expand in a single motion — storyboard beats 2-4. */
+.welcome-hero {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 0px 0fr;
+  align-items: center;
+  padding: var(--space-8) var(--space-5);
+  min-width: 0;
+  min-height: 0;
+  transition:
+    grid-template-columns 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 480ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Split: full-height panels flush to the shell edges */
+.welcome-hero[data-split] {
+  align-items: stretch;
+  padding: 0;
+}
+
+/* Live drag: track the pointer 1:1, no easing */
+.welcome-hero[data-dragging] {
+  transition: none;
+  user-select: none;
+}
+
+.hero-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  /* 70rem (1120px) fits ~125ch of 14px mono code after the gutter + padding;
+     100% keeps it fluid on narrower viewports */
+  max-width: min(100%, 70rem);
+  margin-inline: auto;
+  min-width: 0;
+}
+
+.welcome-hero[data-split] .hero-col {
+  max-width: none;
+  margin-inline: 0;
+  gap: 0;
+  align-items: stretch;
+  min-height: 0;
+}
+
+/* Logo + title collapse out of the way when the result panel is showing */
+.hero-head {
+  display: grid;
+  grid-template-rows: 1fr;
+  width: 100%;
+  justify-items: center;
+  opacity: 1;
+  transition:
+    grid-template-rows 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 200ms ease;
+}
+
+.hero-head-inner {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.welcome-hero[data-split] .hero-head {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+.hero-logo svg {
+  width: 44px;
+  height: 44px;
+  display: block;
+}
+
+.hero-title {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.editor-wrapper {
+  width: 100%;
+}
+
+.welcome-hero[data-split] .editor-wrapper {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---- divider (the grid's middle track; interactive only in split) ---- */
+.divider {
+  position: relative;
+  background: var(--border-subtle);
+  opacity: 0;
+  pointer-events: none;
+  cursor: col-resize;
+  transition: opacity 200ms ease 240ms;
+}
+.welcome-hero[data-split] .divider {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* Widen the 1px track's hit area without affecting layout */
+.divider::before {
+  content: '';
+  position: absolute;
+  inset: 0 -5px;
+}
+.divider:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.divider-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 40px;
+  border-radius: 9px;
+  background: var(--panel-raised);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-subtle);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- result column ---- */
+.result-col {
+  min-width: 0;
+  overflow: hidden;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.welcome-hero[data-split] .result-col {
+  overflow-y: auto;
+  justify-content: flex-start;
+}
+
+/* The pane surface expands first; its content fades in once the panel has (mostly) landed.
+   On collapse (New Review) the delay drops so content vanishes before the panel folds. */
+.result-inner {
+  width: 100%;
+  min-width: 0;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.welcome-hero[data-split] .result-inner {
+  opacity: 1;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: opacity 320ms ease 240ms;
+}
+
+/* Narrow screens stack vertically; the result row expands downward instead */
+@media (max-width: 900px) {
+  .welcome-hero {
+    grid-template-columns: 1fr !important; /* wins over the inline split style */
+    grid-template-rows: auto 0px 0fr;
+    transition:
+      grid-template-rows 480ms cubic-bezier(0.22, 1, 0.36, 1),
+      padding 480ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .welcome-hero[data-split] {
+    grid-template-rows: auto 1px 1fr;
+  }
+  .divider {
+    cursor: row-resize;
+  }
+  .divider-handle {
+    width: 40px;
+    height: 18px;
+  }
+  .divider-handle svg {
+    transform: rotate(90deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-hero,
+  .hero-head,
+  .divider,
+  .result-inner {
+    transition: none;
+  }
+}
+
+/* Hero-only expand affordance: floats over the editor card's top-right corner and
+   jumps to the split layout before any review exists. Hidden once split (the prop
+   isn't rendered then, this is belt-and-braces for the morph frame). */
+.editor-wrapper {
+  position: relative;
+}
+.expand-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.expand-button:hover {
+  background: var(--panel-raised);
+  color: var(--text);
+}
+.welcome-hero[data-split] .expand-button {
+  display: none;
+}

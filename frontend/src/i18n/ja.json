@@ -1,0 +1,184 @@
+{
+  "common": {
+    "appName": "TakoReview",
+    "loading": "読み込み中…",
+    "retry": "再試行",
+    "cancel": "キャンセル",
+    "close": "閉じる"
+  },
+  "gate": {
+    "unsupportedTitle": "WebGPU が必要です",
+    "unsupportedBody": "このアプリは WebGPU を使ってお使いのデバイス上でモデルを実行します。デスクトップ版の Chrome、Edge、または最新の Safari をご利用ください。",
+    "reasonNeedsHttps": "セキュアな(HTTPS)接続が必要です。",
+    "reasonNoWebgpu": "お使いのブラウザは WebGPU に対応していません。",
+    "reasonNoAdapter": "対応する GPU アダプターが見つかりませんでした。",
+    "reasonDeviceInitFailed": "GPU デバイスを初期化できませんでした。",
+    "reasonOom": "GPU の初期化中にメモリが不足しました。",
+    "continueAsGuest": "ゲストとして続行",
+    "trySample": "サンプルコードを試す",
+    "seeDetailedCheck": "詳細な対応状況を確認",
+    "guestConfirmed": "ゲストとして閲覧しています。WebGPU がなくても履歴とフィードバックは利用できます。",
+    "sampleSeeded": "サンプルコードをエディターに読み込みました。"
+  },
+  "preflight": {
+    "ok": "すべて準備完了",
+    "fail": "お使いのブラウザ（{{browser}}）は必要な機能に対応していません。",
+    "checking": "確認中…",
+    "available": "利用可能",
+    "notSupported": "非対応",
+    "notSecure": "セキュアではありません",
+    "secureDetail": "HTTPS / localhost",
+    "rowSecureContext": "セキュアコンテキスト",
+    "rowWebgpu": "WebGPU",
+    "rowWorker": "Worker スレッド",
+    "webgpuBlockedInsecure": "セキュアでない接続のためブロックされました",
+    "deviceFailed": "GPU は利用可能ですが、デバイスの初期化に失敗しました"
+  },
+  "workspace": {
+    "resizePanels": "パネル幅を調整",
+    "expand": "ワークスペースを展開"
+  },
+  "download": {
+    "title": "Qwen2.5-Coder-1.5B をダウンロード中(約1GB、初回のみ)",
+    "loadModel": "モデルを読み込む",
+    "loadModelButton": "モデルを読み込む(約1GB、初回のみ)",
+    "progress": "ダウンロード中… {percent}%",
+    "loadedFromCache": "キャッシュから読み込みました",
+    "cdnError": "モデルの配信元に接続できませんでした。接続を確認して再試行してください。",
+    "quotaError": "ストレージの空き容量が不足しています。空き容量を確保するかサイトデータを削除して再試行してください。",
+    "otherError": "モデルを読み込めませんでした。再試行してください。",
+    "resume": "ダウンロードを再開",
+    "progressLabel": "モデルのダウンロード進捗",
+    "elapsed": "経過 {{time}}",
+    "remaining": "残り 約{{time}}",
+    "worksOffline": "初回ダウンロード後はオフラインでも動作します。",
+    "fasterReload": "次回以降の読み込みはより速くなります。",
+    "didYouKnow": "ご存知ですか?",
+    "tipPage": "{{current}} / {{total}}",
+    "prevTip": "前のヒント",
+    "nextTip": "次のヒント",
+    "learnMore": "詳細",
+    "readyTitle": "Qwen2.5-Coder-1.5B をダウンロード(約1GB、初回のみ)",
+    "loadingTitle": "Qwen2.5-Coder-1.5B を読み込み中…",
+    "readyDesc": "AI コードレビューをブラウザ内でローカル実行 — インストールは不要です。"
+  },
+  "review": {
+    "run": "レビュー実行",
+    "running": "レビュー中…",
+    "emptyPane": "レビュー結果はここに表示されます。",
+    "complete": "レビューが完了しました。",
+    "stoppedPartial": "停止しました — 途中までの結果です。",
+    "copy": "コピー",
+    "copied": "コピーしました",
+    "stop": "停止",
+    "newReview": "新しいレビュー",
+    "modeLegend": "レビューモード",
+    "modeExplain": "解説",
+    "modeBugs": "バグ検出",
+    "modeSecurity": "セキュリティ",
+    "modeStyle": "スタイル",
+    "placeholder": "レビューするコードを貼り付けてください…",
+    "sampleCode": "サンプルコード",
+    "timing": "{{seconds}}秒でレビュー完了 · {{tokensPerSec}} tok/s",
+    "chunkProgress": "セクション {{index}}/{{total}} をレビュー中"
+  },
+  "history": {
+    "title": "履歴",
+    "empty": "まだレビューがありません。最初のレビューを実行するとここに表示されます。",
+    "saveFailed": "このレビューを保存できませんでした。",
+    "loadFailed": "履歴を読み込めませんでした。",
+    "loadMore": "さらに読み込む",
+    "delete": "削除",
+    "confirmDelete": "削除を確定",
+    "itemMeta": "{{mode}} · {{when}} · {{lines}} 行 · {{size}}"
+  },
+  "errors": {
+    "generic": "問題が発生しました。もう一度お試しください。",
+    "validation": "入力が受け付けられませんでした。",
+    "tooLarge": "コードが大きすぎてレビューできません。",
+    "rateLimited": "リクエストが多すぎます。少し待ってから再試行してください。",
+    "saveFailed": "保存できませんでした。レビューは残っています。再試行しますか?",
+    "generation": "レビューを生成できませんでした。",
+    "deviceLost": "GPU 接続が切断されました。再接続しています…",
+    "notFound": "そのレビューは利用できなくなりました。",
+    "authStateMismatch": "サインインを確認できませんでした。もう一度お試しください。",
+    "authGithubError": "GitHub サインインに失敗しました。もう一度お試しください。",
+    "authDbError": "サインインを完了できませんでした。もう一度お試しください。"
+  },
+  "auth": {
+    "signIn": "サインイン",
+    "signOut": "サインアウト",
+    "guestBadge": "ゲスト",
+    "signedInAs": "{{name}} としてサインイン中",
+    "modalTitle": "TakoReview にサインイン",
+    "continueWithGitHub": "GitHub で続行",
+    "continueWithGoogle": "Google で続行",
+    "continueWithApple": "Apple で続行",
+    "continueWithLine": "LINE で続行",
+    "providerComingSoon": "近日対応",
+    "signInTooltip": "サインインするとレビューが保存され、どのデバイスからでも再開できます。"
+  },
+  "feedback": {
+    "prompt": "このレビューは役に立ちましたか?",
+    "up": "役に立った",
+    "down": "役に立たなかった",
+    "saveToEnable": "フィードバックするにはレビューを保存してください。",
+    "tagInaccurate": "不正確",
+    "tagTooVague": "曖昧すぎる",
+    "tagWrongLanguage": "言語が違う",
+    "tagHallucinated": "事実と異なる"
+  },
+  "disclaimer": {
+    "aiGeneratedLabel": "AI 生成",
+    "aiGenerated": "提案は利用前に必ず確認してください。",
+    "onDeviceLabel": "オンデバイス",
+    "onDevice": "推論はデバイス内で完結します。レビュー履歴と匿名の利用状況メトリクスはサーバーに送信されます。",
+    "licensesLabel": "ライセンス",
+    "licenses": "Qwen2.5-Coder-1.5B-Instruct(Apache-2.0)、MLC チームがブラウザ内推論向けにパッケージ化。"
+  },
+  "tips": {
+    "t1": {
+      "title": "引用はクリックできます。",
+      "desc": "レビューが「5行目」を指摘したらクリック — エディタがその行へジャンプして強調表示します。"
+    },
+    "t2": {
+      "title": "キーボードから実行。",
+      "desc": "エディタで ⌘+Enter(Windows は Ctrl+Enter)を押すとレビューが始まります。"
+    },
+    "t3": {
+      "title": "バイリンガルなレビュー。",
+      "desc": "UI の言語を切り替えるとレビューも追従します — 英語・日本語どちらでも出力できます。"
+    },
+    "t4": {
+      "title": "サンプルコードはデッキ式。",
+      "desc": "クリックするたびに別のバグ入りスニペット — 10言語をローテーションします。"
+    },
+    "t5": {
+      "title": "レビューは保存されます。",
+      "desc": "サイドバーから過去のレビューを再表示。GitHub でサインインすると複数デバイスで同期できます。"
+    },
+    "t6": {
+      "title": "大きなファイルもOK。",
+      "desc": "サイズ超過のコードは自動で分割し、セクションごとにレビューします。"
+    }
+  },
+  "language": {
+    "switchTo": "English",
+    "label": "言語",
+    "tooltip": "レビューは UI の言語に追従します — 英語・日本語どちらでも。"
+  },
+  "sidebar": {
+    "collapse": "サイドバーを折りたたむ",
+    "expand": "サイドバーを展開",
+    "open": "サイドバーを開く",
+    "account": "アカウント"
+  },
+  "settings": {
+    "title": "設定",
+    "telemetryOptOut": "利用状況メトリクスを無効にする",
+    "languageLabel": "言語",
+    "languageHint": "インターフェースの言語です。レビューはモデルの言語に従います。",
+    "telemetryLabel": "利用状況メトリクス",
+    "telemetryHint": "デモ改善のため、コードを含まない匿名の利用状況メトリクスを送信します。"
+  }
+}

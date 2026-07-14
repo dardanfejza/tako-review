@@ -1,0 +1,899 @@
+# Grafana provisioned alert rules for the monitoring stack.
+# Copied by infra/monitoring/setup-monitoring.sh to /etc/grafana/provisioning/alerting/.
+#
+# Implements the ABSOLUTE-threshold rows of docs/architecture/monitoring.md
+# "Alert table": backend 5xx, DB unreachable, target down, model-load failure
+# ratio, SQLITE_BUSY/503 surge on write routes, review-throughput collapse,
+# public-origin blackbox probe, TLS cert expiry, host memory/disk, backup
+# dead-man, and the model-CDN synthetic. The baseline-relative rules
+# (model-load p95 > 2x 7-day baseline, device_lost > 3x trailing rate,
+# support < 50% of baseline, e2e p95 > 2x baseline) are deliberately NOT
+# provisioned -- they need a recorded 7-day baseline; until then they are an
+# acknowledged gap (the dashboard's windowed panels approximate, not replace,
+# them).
+#
+# Contact points are NOT provisioned in this file. setup-monitoring.sh renders
+# a webhook contact point + a notification policy (routing severity=page and
+# severity=ticket) only when /srv/monitoring/notify.env provides
+# NOTIFY_WEBHOOK_URL; absent that file, firing alerts are visible in the
+# Grafana UI only (Alerting -> Alert rules).
+#
+# All query nodes use the fixed datasource uid "prometheus"
+# (infra/monitoring/grafana/provisioning/datasources/tako.yaml).
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: tako-ops
+    folder: Tako
+    interval: 1m
+    rules:
+      # monitoring.md Alert table: "Backend 5xx ratio" -- > 1% over 5m, severity page.
+      # The numerator is wrapped in `or vector(0)` so a healthy system with zero 5xx
+      # series ever (the live steady state) evaluates to 0 / OK instead of sitting in
+      # permanent NoData. The `>= bool 30` factor is a minimum-traffic guard: with
+      # fewer than 30 requests in the 5m window the rule is ineligible (evaluates 0),
+      # so a single stray 5xx at demo traffic cannot hold a page for the full window.
+      - uid: tako-5xx-ratio
+        title: Backend 5xx ratio above 1 percent
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: ((sum(rate(starlette_responses_total{status_code=~"5.."}[5m])) or vector(0)) / clamp_min(sum(rate(starlette_responses_total[5m])), 0.001) * (sum(increase(starlette_responses_total[5m])) >= bool 30)) or vector(0)
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0.01
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: Backend 5xx ratio above 1 percent for 5m
+          description: >-
+            More than 1 percent of API responses were 5xx over the last 5
+            minutes (starlette_responses_total), with at least 30 requests in
+            the window (minimum-traffic guard -- below that the ratio is too
+            noisy to page on). The numerator falls back to vector(0) so the
+            rule reads OK, not NoData, on a healthy zero-5xx system. The thin
+            API should essentially never 5xx; there is a single uvicorn
+            process and no second instance to absorb failures. See
+            docs/architecture/monitoring.md, Alert table, "Backend 5xx ratio".
+        labels:
+          severity: page
+        isPaused: false
+
+      # monitoring.md Alert table: "DB unreachable" -- tako_db_ok == 0 for 2
+      # consecutive scrapes (scrape_interval 30s => for: 1m), severity page.
+      - uid: tako-db-unreachable
+        title: SQLite database unreachable (tako_db_ok == 0)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: tako_db_ok
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: tako_db_ok reported 0 for at least 2 consecutive scrapes
+          description: >-
+            The backend's scrape-time SELECT 1 against the single-writer
+            SQLite DB is failing (tako_db_ok == 0). With one writer process
+            this means the whole backend is effectively down, and sustained
+            failure is the documented Postgres-migration trigger. for=1m
+            debounces a one-off at the 30s scrape interval. IMPORTANT: this
+            rule can only fire while the backend process is alive to report
+            the gauge -- if the process or host dies, this rule goes silent
+            (NoData) and detection depends entirely on the "Backend scrape
+            target down" rule (uid tako-target-down) and the blackbox
+            public-origin probe. Treat this rule as valid only while those
+            are green. See docs/architecture/monitoring.md, Alert table,
+            "DB unreachable".
+        labels:
+          severity: page
+        isPaused: false
+
+      # monitoring.md Alert table: "Target down" -- up{job="sakana"} == 0 for 2m,
+      # severity page. noDataState=Alerting: if the series vanishes, that IS the failure.
+      - uid: tako-target-down
+        title: Backend scrape target down (up == 0)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: up{job="sakana"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: Alerting
+        execErrState: Error
+        for: 2m
+        annotations:
+          summary: Prometheus cannot scrape the sakana backend (up == 0 for 2m)
+          description: >-
+            The Prometheus scrape of GET /api/metrics (job "sakana") is
+            failing -- the uvicorn process is gone or the host is unreachable.
+            Distinct from tako_db_ok, which needs a live process to report
+            0. noDataState is Alerting because a missing up series is itself
+            the failure. See docs/architecture/monitoring.md, Alert table,
+            "Target down".
+        labels:
+          severity: page
+        isPaused: false
+
+      # monitoring.md Alert table: "Model-load failure ratio" -- > 20% over 30m,
+      # severity ticket (client-fleet signal, not a server fault).
+      # tako_model_load_* are cumulative point-in-time DB counts (gauges), so the
+      # "over 30m" window is implemented with delta(). Both deltas are clamp_min'd
+      # at 0 because the 90d telemetry prune deletes old rows and makes the gauges
+      # NON-MONOTONIC: a prune pass inside the window would otherwise drive delta()
+      # negative and mask a real failure burst. The `>= bool 3` factor is a
+      # minimum-volume guard: fewer than 3 attempts in the window cannot fire
+      # (1 failure in 2 attempts is not a fleet signal). error_kind='cancelled'
+      # beacons (user-cancelled downloads) are excluded from
+      # tako_model_load_failure by the collector, so cancels never count here.
+      - uid: tako-model-load-failure-ratio
+        title: Model-load failure ratio above 20 percent
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 3600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: (clamp_min(delta(tako_model_load_failure[30m]), 0) / clamp_min(delta(tako_model_load_attempts[30m]), 1)) * (clamp_min(delta(tako_model_load_attempts[30m]), 0) >= bool 3)
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0.2
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: More than 20 percent of model loads failed over the last 30m
+          description: >-
+            Over 20 percent of model_load beacons in the last 30 minutes
+            reported ok=false (tako_model_load_failure vs
+            tako_model_load_attempts), with at least 3 attempts in the
+            window (minimum-volume guard). Deltas are clamped at 0 because
+            the daily 90d telemetry prune makes these cumulative gauges
+            non-monotonic -- an unclamped delta spanning a prune pass goes
+            negative and would mask a real burst. error_kind='cancelled'
+            (user-cancelled downloads) is excluded from the failure gauge by
+            the collector. This is a client-fleet signal -- bad model asset,
+            CDN/cache issue, or a WebGPU break in a browser release -- never
+            server saturation, hence ticket not page. See
+            docs/architecture/monitoring.md, Alert table,
+            "Model-load failure ratio".
+        labels:
+          severity: ticket
+        isPaused: false
+
+      # monitoring.md Alert table: "SQLITE_BUSY / DB-failure surge" -- any 503 on a
+      # write-route path_template over 10m, severity page. Every DB failure
+      # (including SQLITE_BUSY) maps to HTTP 503 in backend/app/core/errors.py, so
+      # this needs zero new instrumentation. `or vector(0)` keeps the rule OK (not
+      # NoData) while no 503 series exists, which is the healthy steady state.
+      - uid: tako-503-write-surge
+        title: 503s on write routes (SQLITE_BUSY / DB-failure surge)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: sum(increase(starlette_responses_total{status_code="503",path_template=~"/api/(reviews|feedback|telemetry|auth/.*)"}[10m])) or vector(0)
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: One or more 503 responses on write routes in the last 10m
+          description: >-
+            A 503 was returned on a write route (/api/reviews, /api/feedback,
+            /api/telemetry, /api/auth/*) within the last 10 minutes. Every DB
+            failure -- explicitly including SQLITE_BUSY -- maps to 503 in
+            backend/app/core/errors.py, and with a single writer process
+            SQLITE_BUSY should be ~never. Recurrence means lock contention:
+            the documented ceiling has been hit and the Postgres migration
+            trigger has fired. See docs/architecture/monitoring.md, Alert
+            table, "SQLITE_BUSY / DB-failure surge".
+        labels:
+          severity: page
+        isPaused: false
+
+      # monitoring.md Alert table: "Review throughput collapse" -- no saved reviews
+      # over 1h while webgpu probes continue (so a genuinely idle period cannot
+      # fire), severity ticket. tako_reviews is clamp_min'd at 0 because reviews
+      # are user-deletable (the gauge can decrease without a broken save path).
+      # The expression evaluates to 1 when collapsed, else 0.
+      - uid: tako-review-throughput-collapse
+        title: Review throughput collapse (traffic without saved reviews)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 7200
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: ((sum(clamp_min(increase(tako_reviews[1h]), 0)) == bool 0) * (sum(increase(tako_webgpu_probes[1h])) > bool 0)) or vector(0)
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 15m
+        annotations:
+          summary: Zero saved reviews in 1h while webgpu probes continued
+          description: >-
+            No new ReviewSession rows were persisted in the last hour
+            (clamp_min(increase(tako_reviews[1h]), 0) == 0 -- clamped
+            because users can delete reviews) while webgpu_probe beacons kept
+            arriving (increase(tako_webgpu_probes[1h]) > 0). Traffic
+            without saves points at a broken save path (POST /api/reviews)
+            that the 5xx alert can miss if the client swallows the error.
+            The probe guard keeps genuinely idle periods from firing. See
+            docs/architecture/monitoring.md, Alert table,
+            "Review throughput collapse".
+        labels:
+          severity: ticket
+        isPaused: false
+
+      # Public-origin probe: blackbox exporter (module http_2xx) probing
+      # https://<your-domain>/ and /api/health from the host (TODO: update to
+      # the new domain once redeployed). Severity
+      # page. noDataState=Alerting: the absence of the probe series IS an incident
+      # (blackbox exporter dead, scrape config gone, or Prometheus itself down).
+      - uid: tako-public-probe-down
+        title: Public origin probe failing (probe_success == 0)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: probe_success{job="blackbox-public"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: Alerting
+        execErrState: Error
+        for: 2m
+        annotations:
+          summary: Blackbox HTTP probe of the public origin is failing
+          description: >-
+            probe_success{job="blackbox-public"} == 0 for 2m -- the public
+            origin (https://<your-domain>/ or /api/health, see the
+            instance label) is not returning 2xx to the blackbox exporter.
+            This is what a visitor experiences: Caddy down, TLS broken, DNS
+            wrong, or the droplet gone. noDataState is Alerting because a
+            missing probe series is itself an incident (the prober or
+            Prometheus died). Caveat: the probe runs on the same droplet, so
+            it exercises Caddy/TLS/app but not external network reachability.
+        labels:
+          severity: page
+        isPaused: false
+
+      # TLS certificate expiry from the same blackbox probe, severity ticket.
+      # Caddy auto-renews Let's Encrypt certs ~30 days out, so < 14 days remaining
+      # means renewal has been failing for weeks (e.g. orange-clouded Cloudflare
+      # record breaking the ACME challenge).
+      - uid: tako-tls-cert-expiry
+        title: TLS certificate expires in under 14 days
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: probe_ssl_earliest_cert_expiry{job="blackbox-public"} - time()
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1209600
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 1h
+        annotations:
+          summary: Public TLS certificate has under 14 days of validity left
+          description: >-
+            probe_ssl_earliest_cert_expiry minus now is below 14 days
+            (1209600s). Caddy renews Let's Encrypt certificates ~30 days
+            before expiry, so reaching this threshold means renewal has been
+            failing for weeks -- most likely the Cloudflare record was
+            flipped to proxied (orange cloud), which breaks the ACME
+            challenge (see CLAUDE.md gotchas). WebGPU requires a secure
+            context, so an expired cert takes the whole product down, not
+            just the padlock.
+        labels:
+          severity: ticket
+        isPaused: false
+
+      # Host memory: < 200 MB available for 10m, severity page. 2 GB droplet with
+      # NO swap -- the OOM killer is the failure mode when memory tightens.
+      - uid: tako-host-mem-low
+        title: Host memory available below 200 MB
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: node_memory_MemAvailable_bytes
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 200000000
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 10m
+        annotations:
+          summary: node_memory_MemAvailable_bytes below 200 MB for 10m
+          description: >-
+            Less than 200 MB of memory available on the droplet for 10
+            minutes. The host is a 2 GB droplet with no swap, so the next
+            stop after this is the OOM killer taking out uvicorn, Prometheus,
+            or Grafana. Check process RSS on the dashboard (Grafana is the
+            largest resident) and docs/runbooks/operations.md.
+        labels:
+          severity: page
+        isPaused: false
+
+      # Host filesystem space, ticket tier: < 15% available on / or the SQLite
+      # block volume /mnt/sakana_data for 15m.
+      - uid: tako-host-disk-low
+        title: Host filesystem below 15 percent available
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: min by (mountpoint) (node_filesystem_avail_bytes{mountpoint=~"/|/mnt/sakana_data"} / node_filesystem_size_bytes{mountpoint=~"/|/mnt/sakana_data"})
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0.15
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 15m
+        annotations:
+          summary: Less than 15 percent disk available on / or /mnt/sakana_data
+          description: >-
+            A monitored filesystem (root or the SQLite block volume
+            /mnt/sakana_data -- see the mountpoint label) has under 15
+            percent of its space available. A full /mnt/sakana_data corrupts
+            the single-writer SQLite database (the architecture's canonical
+            killer); a full root disk takes down Prometheus retention and
+            journald. Prune or grow the volume before the 7 percent page
+            threshold is reached.
+        labels:
+          severity: ticket
+        isPaused: false
+
+      # Host filesystem space, page tier: < 7% available on / or /mnt/sakana_data.
+      - uid: tako-host-disk-critical
+        title: Host filesystem below 7 percent available
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: min by (mountpoint) (node_filesystem_avail_bytes{mountpoint=~"/|/mnt/sakana_data"} / node_filesystem_size_bytes{mountpoint=~"/|/mnt/sakana_data"})
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0.07
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: Less than 7 percent disk available on / or /mnt/sakana_data
+          description: >-
+            A monitored filesystem (root or the SQLite block volume
+            /mnt/sakana_data -- see the mountpoint label) has under 7 percent
+            of its space available. /mnt/sakana_data filling up corrupts the
+            single-writer SQLite database. Act now: prune Prometheus
+            retention / journald on root, or snapshot-and-grow the DO volume
+            for /mnt/sakana_data (docs/runbooks/operations.md).
+        labels:
+          severity: page
+        isPaused: false
+
+      # Backup dead-man switch, severity ticket. The host backup cron writes
+      # tako_backup_last_success_timestamp_seconds to the node-exporter textfile
+      # directory after every successful sqlite3 .backup + volume snapshot pass.
+      # noDataState=Alerting: once backups are supposed to exist, a missing series
+      # (cron deleted, textfile collector broken, node exporter down) is exactly
+      # what a dead-man switch must catch. NOTE: this rule fires from first
+      # provisioning until the FIRST successful backup runs -- that is intentional;
+      # the DB has a single copy until then.
+      - uid: tako-backup-deadman
+        title: Backup dead-man switch (no successful backup in 26h)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: time() - tako_backup_last_success_timestamp_seconds
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 93600
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: Alerting
+        execErrState: Error
+        for: 15m
+        annotations:
+          summary: No successful DB backup recorded for over 26 hours
+          description: >-
+            time() minus tako_backup_last_success_timestamp_seconds exceeds
+            26h (the daily backup cron plus 2h of slack), or the series is
+            absent entirely (noDataState=Alerting -- a dead-man switch must
+            treat silence as failure). The metric is written by the backup
+            cron to the node-exporter textfile directory
+            (/var/lib/prometheus/node-exporter) after every successful
+            sqlite3 .backup + doctl volume snapshot pass. EXPECTED to fire
+            from provisioning until the first backup succeeds: until then the
+            database has exactly one copy. See
+            docs/architecture/deploy-digitalocean.md section 9 and
+            docs/runbooks/operations.md.
+        labels:
+          severity: ticket
+        isPaused: false
+
+      # Model-CDN synthetic, severity ticket. A host cron HEADs the WebLLM
+      # manifest and a params shard (following redirects) and writes
+      # tako_cdn_probe_success{target="manifest"|"shard"} (1/0) plus
+      # tako_cdn_probe_last_run_timestamp_seconds to the textfile directory.
+      # CDN topology drift outside the pinned connect-src is the dominant
+      # HISTORICAL failure class (it already broke production once).
+      - uid: tako-cdn-probe-failure
+        title: Model CDN probe failing (manifest or shard unreachable)
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: min(tako_cdn_probe_success)
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - B
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              refId: B
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 10m
+        annotations:
+          summary: The model-CDN synthetic probe reports a failing target
+          description: >-
+            min(tako_cdn_probe_success) == 0 -- the host cron's HEAD check
+            of the WebLLM model manifest or params shard (target label)
+            failed, or the final redirect host drifted outside the CSP's
+            pinned connect-src. Every visitor's model load will fail the same
+            way while this is red; this exact class of breakage has already
+            happened once in production (manifest alias incident, RB-8 /
+            RB-11). Probe staleness is visible via
+            tako_cdn_probe_last_run_timestamp_seconds on the dashboard.
+        labels:
+          severity: ticket
+        isPaused: false

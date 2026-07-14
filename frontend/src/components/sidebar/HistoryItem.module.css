@@ -1,0 +1,144 @@
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-radius: var(--radius-sm);
+}
+.history-item:hover {
+  background: var(--panel-raised);
+}
+
+.selected {
+  background: var(--accent-subtle);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.selected .item-header {
+  color: var(--accent);
+}
+
+.history-restore {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--space-2);
+  background: transparent;
+  border-color: transparent;
+  border-radius: var(--radius-sm);
+}
+.history-restore:hover {
+  background: transparent;
+}
+
+.item-header {
+  max-width: 100%;
+  font-size: var(--text-sm);
+  font-weight: 550;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.item-body {
+  max-width: 100%;
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-delete {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--text-subtle);
+  background: transparent;
+  border-color: transparent;
+}
+.history-delete:hover {
+  color: var(--danger);
+  background: transparent;
+}
+
+/* Two-step delete confirmation — replaces the one-click destructive icon. */
+.confirm-row {
+  flex-shrink: 0;
+  display: inline-flex;
+  gap: var(--space-1);
+}
+.confirm-delete,
+.cancel-delete {
+  height: 26px;
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.confirm-delete {
+  color: var(--brand-contrast);
+  background: var(--danger);
+  border: 1px solid var(--danger);
+}
+.confirm-delete:hover {
+  background: var(--danger-hover);
+}
+.cancel-delete {
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+.cancel-delete:hover {
+  background: var(--panel-raised);
+  color: var(--text);
+}
+
+/* Custom details popup. position:fixed escapes the sidebar's overflow:hidden (FE §6). */
+.tooltip {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 18rem;
+  max-width: 18rem;
+  padding: var(--space-3);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+.tip-header {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tip-snippet {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  background: var(--code-bg);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.tip-meta {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.tip-rel {
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+}

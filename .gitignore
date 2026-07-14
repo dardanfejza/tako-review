@@ -1,0 +1,29 @@
+# Root-level ignores for the Docker harness. backend/ and frontend/ keep their own .gitignore
+# for their venv / node_modules. (gitignore has no inline comments — keep them on their own lines.)
+
+# Secrets — never commit. `.env` matches only a file literally named .env, so also cover the
+# deploy's `secrets.env` (and any *.env), plus key/cert material. The prod secrets file (signing
+# key, OAuth secret, metrics token) lives only on the host, never in git.
+.env
+*.env
+secrets.env
+*.pem
+*.key
+*.keystore
+id_rsa*
+# Stray root node_modules (the app's real deps live in frontend/node_modules).
+/node_modules
+.DS_Store
+# Visual-companion brainstorm mockups (superpowers) — local only, never commit.
+.superpowers/
+.gstack/
+# Reference material — multi-MB papers + upstream chat UI starting point; kept local only.
+/reference_material/
+# Scratch eval metrics scratchpad — local only.
+/eval_metrics.md
+# Generated code-review artifacts — local only.
+/docs/reviews/
+# OpenCode local tool workspace - local only.
+/.opencode/
+# Submission email strategy notes — local only (untracked pre-invite; old versions remain in git history).
+/docs/submission-email.md

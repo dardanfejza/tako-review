@@ -1,0 +1,102 @@
+/* Design tokens — original chat-UI visual language.
+ * Light + dark via prefers-color-scheme; every component reads these vars, never a raw hex. */
+
+:root {
+  /* Spacing */
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem;
+  --space-5: 1.5rem;  --space-6: 2rem;   --space-8: 3rem;
+
+  /* Radius — md / lg / xl */
+  --radius-sm: 6px; --radius: 8px; --radius-lg: 12px;
+
+  /* Type — system-first (no FOUT); Noto Sans JP kept for Japanese glyphs */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'Noto Sans JP', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'Fira Code', Menlo, Consolas, monospace;
+  --text-xs: 0.75rem; --text-sm: 0.875rem; --text-base: 0.94rem;
+  --text-lg: 1.125rem; --text-xl: 1.5rem; --text-2xl: 1.875rem;
+  --leading: 1.55;
+
+  /* Elevation — real subtle shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1);
+  --shadow: 0 4px 14px rgba(0,0,0,.10);
+
+  --sidebar-w: 16rem;
+  --sidebar-rail-w: 3.5rem;   /* collapsed icon rail (56px) */
+
+  /* Semantic colors — LIGHT */
+  --bg: #ffffff;
+  --bg-subtle: #f9fafb;
+  --panel: #ffffff;
+  --panel-raised: #f9fafb;
+  --border: #d1d5db;
+  --border-strong: #9ca3af;
+  --border-subtle: #e5e7eb;
+  --text: #12151c;
+  --text-muted: #4b5563;
+  /* WCAG AA (4.5:1) on --bg #fff: #6b7280 = 4.83:1. The old #9ca3af (2.54:1) failed AA where it
+     styles the legal disclaimer, telemetry opt-out, and timing badge. */
+  --text-subtle: #6b7280;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-contrast: #ffffff;
+  --accent-subtle: #eff6ff;
+  /* Saturated CTA blue: in dark mode --accent goes pale for text/links, so primary
+     buttons (Run Review) use this pair to stay vivid in both themes */
+  --accent-vivid: #2563eb;
+  --accent-vivid-hover: #1d4ed8;
+  --accent-vivid-contrast: #ffffff;
+  --focus: #2563eb;
+  --control: #12151c;
+  --control-hover: #000000;
+  --control-text: #ffffff;
+  --brand: #0D9488;
+  --brand-contrast: #ffffff;
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --danger-subtle: #fef2f2;
+  --success: #16a34a;
+  --warning: #b45309;
+  --warning-subtle: #fffbeb;
+  --code-bg: #f9fafb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.5), 0 1px 2px -1px rgba(0,0,0,.5);
+    --shadow: 0 4px 14px rgba(0,0,0,.6);
+
+    --bg: #12151c;
+    --bg-subtle: #1f2430;
+    --panel: #1f2430;
+    --panel-raised: #374151;
+    --border: #4b5563;
+    --border-strong: #6b7280;
+    --border-subtle: #323845;
+    --text: #f3f4f6;
+    --text-muted: #9ca3af;
+    /* WCAG AA on --bg #12151c: #9ca3af = 7.0:1. The old #6b7280 (~3.2:1) failed AA in dark mode
+      . */
+    --text-subtle: #9ca3af;
+    --accent: #93c5fd;
+    --accent-hover: #bfdbfe;
+    --accent-contrast: #12151c;
+    --accent-subtle: #1e3a5f;
+    --accent-vivid: #3b82f6;
+    --accent-vivid-hover: #2563eb;
+    --accent-vivid-contrast: #ffffff;
+    --focus: #93c5fd;
+    --control: #f3f4f6;
+    --control-hover: #ffffff;
+    --control-text: #12151c;
+    --brand: #0D9488;
+    --brand-contrast: #ffffff;
+    --danger: #f87171;
+    --danger-hover: #fca5a5;
+    --danger-subtle: #3a1818;
+    --success: #4ade80;
+    --warning: #fbbf24;
+    --warning-subtle: #3a2c0a;
+    --code-bg: #0f1117;
+  }
+}
